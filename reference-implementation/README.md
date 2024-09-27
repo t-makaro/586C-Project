@@ -2,8 +2,7 @@
 
 This directory contains a reference digit classifier using a multi-layer perceptron neural network. This is built using only python and numpy. Matplotlib and ipykernel are used for visualization and notebook support respectively.
 
-
-Tested using python 3.11.7 and numpy 2.1.1
+Tested using python 3.12.3 and numpy 2.1.1
 
 Setting up an environment.
 

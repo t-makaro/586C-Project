@@ -49,12 +49,11 @@ class NeuralNet:
         """
         answers, data = training_data
         n = len(answers)
-        for i in range(iterations[0]):
+        for i in range(iterations):
             shuffled_data = np.arange(n).reshape(n//batch_size, batch_size)
             np.random.shuffle(shuffled_data)
             for choice in shuffled_data:
-                for step in range(iterations[1]):
-                    self.update_from_batch((answers[choice], data[choice]), learning_rate)
+                self.update_from_batch((answers[choice], data[choice]), learning_rate)
 
     def update_from_batch(self, batch, learning_rate):
         """Process a batch of training data"""

@@ -37,3 +37,8 @@
 .ipynb_checkpoints
 .virtual_documents
 __pycache__
+
+# IDEs
+.idea
+.vs
+.vscode

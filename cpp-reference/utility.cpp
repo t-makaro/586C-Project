@@ -42,6 +42,7 @@ vector<vector<float>> utility::ReadCSV(std::string csvPath){
     for (csv::CSVRow& row: reader) { // Input iterator
         
         vector<float> row_v ;
+        row_v.reserve(row.size());
         for (csv::CSVField& field: row) {
             row_v.push_back(field.get<float>() / 255.f); // normalize
         }

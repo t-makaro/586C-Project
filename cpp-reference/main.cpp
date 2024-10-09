@@ -19,13 +19,21 @@ int main() {
     // Util 3: Read Bias for a single layer
     auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");
 
-    std::cout << "Size of this bias array: " << biases_a1.size(); << std::endl;
+    std::cout << "Size of this bias array: " << biases_a1.size() << std::endl; // 300,
+
     for (size_t i = 0; i < biases_a1.size(); i++)
     {
         std::cout << biases_a1[i] << std::endl;
     }
 
     // Util 4: Read Weights as vector<vector<float>> for each layer
-    
+    auto weights_a1 = utility::ReadWeight("../data/weights_a1.csv");
+    std::cout << weights_a1.size() << std::endl;
+    std::cout << weights_a1[0].size() << std::endl; // 300, 784
+
+    for (size_t i = 0; i < weights_a1[0].size(); i++)
+    {
+        std::cout << weights_a1[0][i] << std::endl;
+    }
     return 0;
 }

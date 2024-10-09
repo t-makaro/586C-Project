@@ -14,6 +14,7 @@ public:
     static vector<vector<float>> ReadTestCSV(std::string csvPath);
     static vector<vector<float>> ReadTrainCSV(std::string csvPath, std::vector<int> &results); // Train csv comes with a label as the first field in a row
     static vector<float> ReadBias(std::string csvPath);
+    static vector<vector<float>> ReadWeight(std::string csvPath);
 };
 
 utility::utility(/* args */)
@@ -85,8 +86,25 @@ vector<float> utility::ReadBias(std::string csvPath)
 
     for (csv::CSVRow& row: reader) { // Input iterator
         // std::cout << row.size() << std::endl;
-        assert(row.size() == 2); // Bias outpus should be 1 per row, and the number of rows == layer.num_of_neurons()
-        res.push_back(row[1].get<float>());
+        assert(row.size() == 1); // Bias outpus should be 1 per row, and the number of rows == layer.num_of_neurons()
+        res.push_back(row[0].get<float>());
+    }
+    return res;
+}
+
+vector<vector<float>> utility::ReadWeight(std::string csvPath)
+{
+    auto res = vector<vector<float>>();
+    csv::CSVReader reader(csvPath);
+    res.reserve(reader.n_rows());
+
+    for (csv::CSVRow& row: reader) { // Input iterator
+        vector<float> row_v ;
+        row_v.reserve(row.size());
+        for (csv::CSVField& field: row) {
+                row_v.push_back(field.get<float>()); 
+        }
+        res.push_back(row_v);
     }
     return res;
 }

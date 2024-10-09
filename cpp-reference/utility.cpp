@@ -13,6 +13,7 @@ public:
     static void PrintCSV(std::string csvPath);
     static vector<vector<float>> ReadTestCSV(std::string csvPath);
     static vector<vector<float>> ReadTrainCSV(std::string csvPath, std::vector<int> &results); // Train csv comes with a label as the first field in a row
+    static vector<float> ReadBias(std::string csvPath);
 };
 
 utility::utility(/* args */)
@@ -71,6 +72,21 @@ vector<vector<float>> utility::ReadTestCSV(std::string csvPath){
                 row_v.push_back(field.get<float>() / 255.f); // normalize
         }
         res.push_back(row_v);
+    }
+    return res;
+}
+
+vector<float> utility::ReadBias(std::string csvPath)
+{
+    auto res = vector<float>();
+    
+    csv::CSVReader reader(csvPath);
+    res.reserve(reader.n_rows());
+
+    for (csv::CSVRow& row: reader) { // Input iterator
+        // std::cout << row.size() << std::endl;
+        assert(row.size() == 2); // Bias outpus should be 1 per row, and the number of rows == layer.num_of_neurons()
+        res.push_back(row[1].get<float>());
     }
     return res;
 }

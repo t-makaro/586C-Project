@@ -1,6 +1,5 @@
 #include "nn.cpp"
 #include "utility.cpp"
-#include <chrono>
 
 int main() {
   // Util 0: Read Train Data
@@ -41,65 +40,11 @@ int main() {
   // NN 2: Forward Pass Training Set
 
   std::cout << "Forward pass over training set..." << std::endl;
-  int numCorrect = 0;
-
-  // timing
-  auto start = std::chrono::high_resolution_clock::now();
-
-  Vector result(10, 0);
-  for (int i = 0; i < csvTrainData.size(); i++) {
-    Vector input = csvTrainData[i];
-    Vector output = nn.forward(input, result);
-
-    int maxIndex = 0;
-    float maxVal = 0;
-    for (int j = 0; j < output.size(); j++) {
-      if (output[j] > maxVal) {
-        maxVal = output[j];
-        maxIndex = j;
-      }
-    }
-    if (maxIndex == trainLabels[i]) {
-      numCorrect++;
-    }
-  }
-
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = end - start;
-
-  std::cout << "done." << std::endl;
-  std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
-  std::cout << "Train Accuracy: " << (float)numCorrect / csvTrainData.size()
-            << std::endl;
+  nn.evaluate(csvTrainData, trainLabels);
 
   // NN 3: Forward Pass Test Set
-  numCorrect = 0;
-  start = std::chrono::high_resolution_clock::now();
-
-  result = Vector(10, 0);
-  for (int i = 0; i < csvTestData.size(); i++) {
-    Vector input = csvTestData[i];
-    Vector output = nn.forward(input, result);
-
-    int maxIndex = 0;
-    float maxVal = 0;
-    for (size_t j = 0; j < output.size(); j++) {
-      if (output[j] > maxVal) {
-        maxVal = output[j];
-        maxIndex = j;
-      }
-    }
-    if (maxIndex == testLabels[i]) {
-      numCorrect++;
-    }
-  }
-  std::cout << "done." << std::endl;
-  end = std::chrono::high_resolution_clock::now();
-  elapsed = end - start;
-  std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
-
-  std::cout << "Test Accuracy: " << (float)numCorrect / csvTestData.size()
-            << std::endl;
+  std::cout << "Forward pass over test set..." << std::endl;
+  nn.evaluate(csvTestData, testLabels);
 
   return 0;
 }

@@ -1,5 +1,7 @@
 #include <cassert>
 #include <vector>
+#include <iostream>
+#include <chrono>
 
 typedef std::vector<float> Vector;
 typedef std::vector<Vector> Matrix;
@@ -12,7 +14,7 @@ public:
   Vector &forward(const Vector &x, Vector &result);
   void train(const Matrix trainingData, const int iterations,
              const int batchSize, float learningRate);
-  float evaluate(const Matrix testData);
+  float evaluate(const Matrix testData, const std::vector<int> testLabels);
 
   void copyWeights(const std::vector<Matrix> weights);
   void copyBiases(const std::vector<Vector> biases);
@@ -90,9 +92,39 @@ void NN::updateFromBatch(const Matrix batch, const float learningRate) {
   // TODO
 }
 
-float NN::evaluate(const Matrix testData) {
-  // TODO
-  return 0.0;
+float NN::evaluate(const Matrix testData, const std::vector<int> testLabels) {
+  int numCorrect = 0;
+
+  // timing
+  auto start = std::chrono::high_resolution_clock::now();
+
+  Vector result(10, 0);
+  for (int i = 0; i < testData.size(); i++) {
+    Vector input = testData[i];
+    Vector output = forward(input, result);
+
+    int maxIndex = 0;
+    float maxVal = 0;
+    for (int j = 0; j < output.size(); j++) {
+      if (output[j] > maxVal) {
+        maxVal = output[j];
+        maxIndex = j;
+      }
+    }
+    if (maxIndex == testLabels[i]) {
+      numCorrect++;
+    }
+  }
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = end - start;
+
+  std::cout << "done." << std::endl;
+  std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
+  float accuracy = (float)numCorrect / testData.size();
+  std::cout << "Train Accuracy: " << accuracy
+            << std::endl;
+  return accuracy;
 }
 
 Vector &NN::forwardLayer(const Matrix &w, const Vector &b, const Vector &a,

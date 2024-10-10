@@ -39,6 +39,10 @@ private:
   static float sigmoid(float x);
   static Vector &d_sigmoid(Vector &x);
   static float d_sigmoid(float x);
+
+  void backwards(std::vector<Matrix> &dWeights, std::vector<Vector> &dBiases, 
+                const Matrix &testData, const std::vector<int> &testLabels);
+  static Vector cost_derivative(const Vector &last_activation, const int label);
 };
 
 NN::NN(std::vector<int> layers) : layers(layers) {
@@ -90,6 +94,23 @@ void NN::train(const Matrix trainingData, const int iterations,
 
 void NN::updateFromBatch(const Matrix batch, const float learningRate) {
   // TODO
+}
+
+void NN::backwards(std::vector<Matrix> &dWeights, std::vector<Vector> &dBiases, 
+               const Matrix &testData, const std::vector<int> &testLabels){
+  // TODO
+}
+
+static Vector cost_derivative(const Vector &last_activation, const int label){
+  Vector ans(10, 0);
+  for (int i=0; i < 10; i++){
+      if (i == label){
+        ans[i] = -1/last_activation[i];
+      } else {
+        ans[i] = 1/(1-last_activation[i]);
+      }
+  }
+  return ans;
 }
 
 float NN::evaluate(const Matrix &testData, const std::vector<int> &testLabels) {
@@ -144,6 +165,8 @@ Vector &NN::d_sigmoid(Vector &x) {
   }
   return x;
 }
+
+
 
 float NN::sigmoid(float x) { return 1.0 / (1.0 + exp(-x)); }
 float NN::d_sigmoid(float x) {

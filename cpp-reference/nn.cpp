@@ -40,8 +40,8 @@ private:
   static Vector &d_sigmoid(Vector &x);
   static float d_sigmoid(float x);
 
-  void backwards(std::vector<Matrix> &dWeights, std::vector<Vector> &dBiases, 
-                const Matrix &testData, const std::vector<int> &testLabels);
+  void backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
+                const Vector &testData, const int testLabel);
   static Vector cost_derivative(const Vector &last_activation, const int label);
 };
 
@@ -96,8 +96,8 @@ void NN::updateFromBatch(const Matrix batch, const float learningRate) {
   // TODO
 }
 
-void NN::backwards(std::vector<Matrix> &dWeights, std::vector<Vector> &dBiases, 
-               const Matrix &testData, const std::vector<int> &testLabels){
+void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
+               const Vector &testData, int testLabel){
   // TODO
 }
 

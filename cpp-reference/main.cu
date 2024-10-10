@@ -52,5 +52,14 @@ int main() {
 
     std::cout << "All values are correct!\n";
 
+
+  // CU 2: Sigmoid Vec
+  N = biases_a1.size();
+  std::vector<float> t_gpusig(N);
+  std::vector<float> t_cpusig(biases_a1);
+
+  NN::sigmoid(t_cpusig);
+  cu_utility::cuSigmoid(biases_a1, t_gpusig);
+
   return 0;
 }

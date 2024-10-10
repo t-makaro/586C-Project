@@ -35,6 +35,8 @@ private:
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
   static Vector &sigmoid(Vector &x);
   static float sigmoid(float x);
+  static Vector &d_sigmoid(Vector &x);
+  static float d_sigmoid(float x);
 };
 
 NN::NN(std::vector<int> layers) : layers(layers) {
@@ -104,8 +106,18 @@ Vector &NN::sigmoid(Vector &x) {
   }
   return x;
 }
+Vector &NN::d_sigmoid(Vector &x) {
+  for (int i = 0; i < x.size(); i++) {
+    x[i] = d_sigmoid(x[i]);
+  }
+  return x;
+}
 
 float NN::sigmoid(float x) { return 1.0 / (1.0 + exp(-x)); }
+float NN::d_sigmoid(float x) {
+  float xp = exp(-x);
+  return xp / ((1.0 + xp)*(1.0 + xp)); 
+}
 
 Vector &NN::multiply(const Matrix &w, const Vector &x, Vector &result) {
   assert(result.size() == w.size() && w[0].size() == x.size());

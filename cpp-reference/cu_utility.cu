@@ -2,6 +2,7 @@
 #include <vector>
 #include <cuda_runtime.h>
 
+// Kernels
 __global__
  void vectorAdd(const float* A, const float* B, float* C, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -10,6 +11,7 @@ __global__
     }
 }
 
+// APIs
 class cu_utility
 {
 private:
@@ -63,29 +65,5 @@ std::vector<float> &cu_utility::cuVectorAdd(const std::vector<float> &x, const s
 
     return result;
 
-}
-
-// Use this function as playgrounds
-int main() {
-    int N = 1000; // Size of vectors
-
-    // Allocate host memory
-    std::vector<float> h_A(N, 1.0f); // Initialize with 1.0f
-    std::vector<float> h_B(N, 2.0f); // Initialize with 2.0f
-    std::vector<float> h_C(N);
-
-    h_C = cu_utility::cuVectorAdd(h_A, h_B, h_C);
-
-    // Verify the result
-    for (int i = 0; i < N; ++i) {
-        if (h_C[i] != 3.0f) {
-            std::cerr << "Error at index " << i << ": " << h_C[i] << " != 3.0f\n";
-            return -1;
-        }
-    }
-
-    std::cout << "All values are correct!\n";
-
-    return 0;
 }
 

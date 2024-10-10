@@ -14,7 +14,7 @@ public:
   Vector &forward(const Vector &x, Vector &result);
   void train(const Matrix trainingData, const int iterations,
              const int batchSize, float learningRate);
-  float evaluate(const Matrix testData, const std::vector<int> testLabels);
+  float evaluate(const Matrix &testData, const std::vector<int> &testLabels);
 
   void copyWeights(const std::vector<Matrix> weights);
   void copyBiases(const std::vector<Vector> biases);
@@ -92,7 +92,7 @@ void NN::updateFromBatch(const Matrix batch, const float learningRate) {
   // TODO
 }
 
-float NN::evaluate(const Matrix testData, const std::vector<int> testLabels) {
+float NN::evaluate(const Matrix &testData, const std::vector<int> &testLabels) {
   int numCorrect = 0;
 
   // timing

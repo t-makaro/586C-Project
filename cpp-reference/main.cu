@@ -1,4 +1,4 @@
-#include "nn.cpp"
+#include "cunn.cu"
 #include "utility.cpp"
 #include "cu_utility.cu"
 #include <chrono>

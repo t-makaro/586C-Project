@@ -60,16 +60,13 @@ class NeuralNet:
         """Process a batch of training data"""
         d_weights = [np.zeros_like(w) for w in self.weights]
         d_biases = [np.zeros_like(b) for b in self.biases]
-
-        lmbda = 2e-4
-        training_size = 1
         
         answers, data = batch
         for ans, datum in zip(answers, data):
             dd_weights, dd_biases = self.propagate_backwards(ans, datum)
             d_weights = [dw+ddw for dw, ddw in zip(d_weights, dd_weights)]
             d_biases = [db+ddb for db, ddb in zip(d_biases, dd_biases)]
-        self.weights = [(1-learning_rate*lmbda/training_size)*w-learning_rate/len(answers)*dw 
+        self.weights = [w-learning_rate/len(answers)*dw 
                         for w, dw in zip(self.weights, d_weights)]
         self.biases = [b-learning_rate/len(answers)*db for b, db in zip(self.biases, d_biases)]
     

@@ -43,3 +43,6 @@ __pycache__
 .vs
 .vscode
 cpp-reference/compile_commands.json
+
+# dataset
+data/

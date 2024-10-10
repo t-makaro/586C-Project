@@ -42,3 +42,4 @@ __pycache__
 .idea
 .vs
 .vscode
+cpp-reference/compile_commands.json

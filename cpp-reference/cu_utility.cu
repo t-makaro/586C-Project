@@ -26,6 +26,20 @@ void sigmoid(const float* A, float* R,int N){
     }
 }
 
+__device__
+float d_sigmoid(const float a){
+    float xp = exp(-a);
+    return xp / ((1.0 + xp)*(1.0 + xp)); 
+}
+
+__global__
+void d_sigmoid(const float* A, float* R, int N){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < N) {
+        R[i] = d_sigmoid(A[i]);
+    }
+}
+
 // APIs
 class cu_utility
 {
@@ -36,6 +50,7 @@ public:
     ~cu_utility();
     static std::vector<float>& cuVectorAdd(const std::vector<float> &x, const std::vector<float> &b, std::vector<float> &result);
     static std::vector<float>& cuSigmoid(const std::vector<float> &x, std::vector<float> &result);
+    static std::vector<float> &cu_utility::cuDSigmoid(const std::vector<float> &x, std::vector<float> &result);
 };
 
 cu_utility::cu_utility(/* args */)
@@ -83,7 +98,7 @@ std::vector<float> &cu_utility::cuVectorAdd(const std::vector<float> &x, const s
 }
 
 std::vector<float> &cu_utility::cuSigmoid(const std::vector<float> &x, std::vector<float> &result){
-        if(!(x.size() == result.size())){
+    if(!(x.size() == result.size())){
         std::cerr << "cuSigmoid - Size does not match!";
         return result;
     }
@@ -103,6 +118,36 @@ std::vector<float> &cu_utility::cuSigmoid(const std::vector<float> &x, std::vect
     int threadsPerBlock = 256;
     int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
     sigmoid<<<blocksPerGrid, threadsPerBlock>>>(d_x, d_r, N);
+
+    // Copy result from device to host
+    cudaMemcpy(result.data(), d_r, size, cudaMemcpyDeviceToHost);
+
+    cudaFree(d_x);
+    cudaFree(d_r);
+
+    return result;
+}
+
+std::vector<float> &cu_utility::cuDSigmoid(const std::vector<float> &x, std::vector<float> &result){
+    if(!(x.size() == result.size())){
+        std::cerr << "cuSigmoid - Size does not match!";
+        return result;
+    }
+    int N = x.size(); // Size of vectors
+    size_t size = N * sizeof(float);
+
+    // Allocate device memory
+    float *d_x, *d_r;
+    cudaMalloc(&d_x, size);
+    cudaMalloc(&d_r, size);
+
+    // Copy data from host to device
+    cudaMemcpy(d_x, x.data(), size, cudaMemcpyHostToDevice);
+
+    // Launch the kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+    d_sigmoid<<<blocksPerGrid, threadsPerBlock>>>(d_x, d_r, N);
 
     // Copy result from device to host
     cudaMemcpy(result.data(), d_r, size, cudaMemcpyDeviceToHost);

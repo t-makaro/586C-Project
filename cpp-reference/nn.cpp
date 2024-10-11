@@ -18,7 +18,9 @@ public:
 
   void copyWeights(const std::vector<Matrix> weights);
   void copyBiases(const std::vector<Vector> biases);
-  static Vector &sigmoid(Vector &x);
+
+  static float sigmoid(float x);
+  static float d_sigmoid(float x);
 
 private:
   int numLayers;
@@ -36,9 +38,9 @@ private:
   void updateFromBatch(const Matrix batch, const float learningRate);
   static Vector &multiply(const Matrix &w, const Vector &x, Vector &result);
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
-  static float sigmoid(float x);
+  static Vector &sigmoid(Vector &x);
   static Vector &d_sigmoid(Vector &x);
-  static float d_sigmoid(float x);
+  
 
   void backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
                 const Vector &testData, const int testLabel);

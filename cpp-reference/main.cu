@@ -54,12 +54,25 @@ int main() {
 
 
   // CU 2: Sigmoid Vec
-  N = biases_a1.size();
-  std::vector<float> t_gpusig(N);
-  std::vector<float> t_cpusig(biases_a1);
+  N = 512;
+  std::vector<float> t_gpusig(N, 0.4f);
+  std::vector<float> res_gpusig(N);
 
-  NN::sigmoid(t_cpusig);
-  cu_utility::cuSigmoid(biases_a1, t_gpusig);
+  float sig = NN::sigmoid(0.4f);
+  cu_utility::cuSigmoid(t_gpusig, res_gpusig);
+
+  std::cout << "Cuda Sigmoid Result: " << res_gpusig[256] << std::endl;
+  std::cout << "CPU Reference: " << sig << std::endl;
+
+  // CU 3: dSigmoid
+  std::vector<float> t_gpudsig(N, 0.4f);
+  std::vector<float> res_gpudsig(N);
+
+  float dsig = NN::d_sigmoid(0.4f);
+  cu_utility::cuDSigmoid(t_gpudsig, res_gpudsig);
+
+  std::cout << "Cuda dSigmoid Result: " << res_gpudsig[256] << std::endl;
+  std::cout << "CPU Reference: " << dsig << std::endl;
 
   return 0;
 }

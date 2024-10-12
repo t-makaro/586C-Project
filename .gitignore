@@ -47,3 +47,7 @@ cpp-reference/compile_commands.json
 
 # dataset
 data/
+
+build/
+.cmake/
+cmake-build-debug/

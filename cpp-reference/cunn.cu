@@ -42,8 +42,8 @@ Vector &CUNN::add(const Vector &x, const Vector &b, Vector &result)
 
 Vector &CUNN::sigmoid(Vector &x)
 {
-    // TODO: insert return statement here
-    return cu_utility::cuSigmoid(x)
+    Vector result = Vector(x);
+    return cu_utility::cuSigmoid(x, result);
 }
 
 Vector &CUNN::d_sigmoid(Vector &x)

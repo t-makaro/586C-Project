@@ -109,19 +109,18 @@ void NN::updateFromBatch(const Matrix batch, const float learningRate) {
 
 void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
                const Vector &testData, int testLabel){
-  // TODO
   activations[0] = testData;
   for (int i = 1; i < numLayers; i++){
     forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
     sigmoid(zs[i], activations[i]);
   }
   Vector delta;
-  for (int i = 0; i < numLayers; i++){
+  for (int i = 0; i < numLayers-1; i++){
     if (i==0){
       cost_derivative(activations[activations.size()-1], testLabel, delta);
     }
     else{
-      
+      activation_derivative(weights[numLayers-i], zs[numLayers-i], delta);
     }
     multiply_elementwise(d_sigmoid(zs[numLayers-1-i]), delta, dBiases_output[numLayers-1-i]);
     outer_product(activations[numLayers-2-i], dBiases_output[numLayers-1-i], dWeights_output[numLayers-1-i]);
@@ -140,9 +139,13 @@ void NN::cost_derivative(const Vector &last_activation, const int label, Vector 
 }
 
 void NN::activation_derivative(const Matrix &weights, Vector &z, Vector &previous){
-
   d_sigmoid(z);
   multiply_elementwise(z, previous, previous);
+  Matrix temp;
+  transpose(weights, temp);
+  Vector result;
+  multiply(temp, previous, result);
+  previous = result;
 }
 
 void NN::transpose(const Matrix &a, Matrix &result){

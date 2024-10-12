@@ -1,39 +1,45 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
 #include <cuda_runtime.h>
 
+#include <iostream>
+#include <vector>
+
 // Kernels
-__global__
- void vectorAdd(const float* A, const float* B, float* C, int N) {
+__global__ void vectorAdd(const float *A, const float *B, float *C, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
         C[i] = A[i] + B[i];
     }
 }
 
-__device__
-float sigmoid(float a){
-    return 1.0 / (1.0 + exp(-a));
+__global__ void matMulVec(const float *W, const float *X, float *Y, int M,
+                          int N) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < M) {
+        float tmp = 0.0;
+        for (int k = 0; k < N; k++) {
+            tmp += W[i * N + k] * X[k];
+        }
+        Y[i] = tmp;
+    }
 }
 
-__global__
-void sigmoid(float* A,int N){
+__device__ float sigmoid(float a) { return 1.0 / (1.0 + exp(-a)); }
+
+__global__ void sigmoid(float *A, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
         A[i] = sigmoid(A[i]);
     }
 }
 
-__device__
-float d_sigmoid(float a){
+__device__ float d_sigmoid(float a) {
     float xp = exp(-a);
-    return xp / ((1.0 + xp)*(1.0 + xp)); 
+    return xp / ((1.0 + xp) * (1.0 + xp));
 }
 
-__global__
-void d_sigmoid(float* A, int N){
+__global__ void d_sigmoid(float *A, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
         A[i] = d_sigmoid(A[i]);
@@ -41,34 +47,35 @@ void d_sigmoid(float* A, int N){
 }
 
 // APIs
-class cu_utility
-{
-private:
+class cu_utility {
+   private:
     /* data */
-public:
+   public:
     cu_utility(/* args */);
     ~cu_utility();
-    static std::vector<float>& cuVectorAdd(const std::vector<float> &x, const std::vector<float> &b, std::vector<float> &result);
-    static std::vector<float>& cuSigmoid(std::vector<float> &x);
-    static std::vector<float> &cu_utility::cuDSigmoid(std::vector<float> &x);
+    static std::vector<float> &cuVectorAdd(const std::vector<float> &x,
+                                           const std::vector<float> &b,
+                                           std::vector<float> &result);
+    static std::vector<float> &cuSigmoid(std::vector<float> &x);
+    static std::vector<float> &cuDSigmoid(std::vector<float> &x);
+    static std::vector<float> &cuMatMulVector(
+        const std::vector<std::vector<float>> &W, const std::vector<float> &x,
+        std::vector<float> &result);
 };
 
-cu_utility::cu_utility(/* args */)
-{
-}
+cu_utility::cu_utility(/* args */) {}
 
-cu_utility::~cu_utility()
-{
-}
+cu_utility::~cu_utility() {}
 
-std::vector<float> &cu_utility::cuVectorAdd(const std::vector<float> &x, const std::vector<float> &b, std::vector<float> &result)
-{
-    if(!(x.size() == b.size() && x.size() == result.size())){
+std::vector<float> &cu_utility::cuVectorAdd(const std::vector<float> &x,
+                                            const std::vector<float> &b,
+                                            std::vector<float> &result) {
+    if (!(x.size() == b.size() && x.size() == result.size())) {
         std::cerr << "cuVectorAdd - Size does not match!";
         return result;
     }
 
-    int N = x.size(); // Size of vectors
+    int N = x.size();  // Size of vectors
     size_t size = N * sizeof(float);
 
     // Allocate device memory
@@ -94,12 +101,10 @@ std::vector<float> &cu_utility::cuVectorAdd(const std::vector<float> &x, const s
     cudaFree(d_r);
 
     return result;
-
 }
 
-std::vector<float> &cu_utility::cuSigmoid(std::vector<float> &x){
-
-    int N = x.size(); // Size of vectors
+std::vector<float> &cu_utility::cuSigmoid(std::vector<float> &x) {
+    int N = x.size();  // Size of vectors
     size_t size = N * sizeof(float);
 
     // Allocate device memory
@@ -122,8 +127,8 @@ std::vector<float> &cu_utility::cuSigmoid(std::vector<float> &x){
     return x;
 }
 
-std::vector<float> &cu_utility::cuDSigmoid(std::vector<float> &x){
-    int N = x.size(); // Size of vectors
+std::vector<float> &cu_utility::cuDSigmoid(std::vector<float> &x) {
+    int N = x.size();  // Size of vectors
     size_t size = N * sizeof(float);
 
     // Allocate device memory
@@ -146,3 +151,48 @@ std::vector<float> &cu_utility::cuDSigmoid(std::vector<float> &x){
     return x;
 }
 
+std::vector<float> &cu_utility::cuMatMulVector(
+    const std::vector<std::vector<float>> &W, const std::vector<float> &x,
+    std::vector<float> &result) {
+    // Check Dims
+    if (!(W[0].size() == x.size() && W.size() == result.size())) {
+        std::cerr << "cuMatMulVector - Size does not match!";
+        return result;
+    }
+
+    int M = result.size();
+    int N = x.size();  // Size of vectors
+
+    size_t sizeW = M * N * sizeof(float);
+    size_t sizeX = N * sizeof(float);
+    size_t sizeY = M * sizeof(float);
+
+    // Allocate device memory
+    float *d_W, *d_x, *d_y;
+    cudaMalloc(&d_W, sizeW);
+    cudaMalloc(&d_x, sizeX);
+    cudaMalloc(&d_y, sizeY);
+
+    // Copy data from host to device
+    std::vector<float> W_flattened(M * N);
+    for (int i = 0; i < M; i++) {
+        std::copy(W[i].begin(), W[i].end(), W_flattened.begin() + i * N);
+    }
+    cudaMemcpy(d_W, W_flattened.data(), sizeW, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_x, x.data(), sizeX, cudaMemcpyHostToDevice);
+
+    // Launch the kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    matMulVec<<<blocksPerGrid, threadsPerBlock>>>(d_W, d_x, d_y, M, N);
+
+    // Copy result from device to host
+    cudaMemcpy(result.data(), d_y, sizeY, cudaMemcpyDeviceToHost);
+
+    cudaFree(d_W);
+    cudaFree(d_x);
+    cudaFree(d_y);
+
+    return result;
+}

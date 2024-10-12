@@ -40,7 +40,7 @@ private:
 
   static Vector &multiply(const Matrix &w, const Vector &x, Vector &result);
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
-  Vector &add(const Matrix &x, const Matrix &b, Matrix &result, const float scale);
+  Matrix &add(const Matrix &x, const Matrix &b, Matrix &result, const float scale);
   Vector &add(const Vector &x, const Vector &b, Vector &result, const float scale);
   static Vector &sigmoid(Vector &x);
   static Vector &d_sigmoid(Vector &x);

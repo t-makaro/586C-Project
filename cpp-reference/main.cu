@@ -1,9 +1,12 @@
 #include "cunn.cu"
 #include "utility.cpp"
 #include "cu_utility.cu"
+#include "test.h"
 #include <chrono>
 
 int main() {
+  auto t = test();
+  t.Hello();
   // Util 0: Read Train Data
   vector<int> trainLabels;
   trainLabels.reserve(60000);

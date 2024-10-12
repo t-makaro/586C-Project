@@ -1,4 +1,5 @@
 #include "nn.cpp"
+#include "cu_utility.cu"
 
 class CUNN : public NN
 {
@@ -17,7 +18,7 @@ public:
 
 Vector &CUNN::forwardLayer(const Matrix &w, const Vector &b, const Vector &a, Vector &result)
 {
-    // TODO: insert return statement here
+    return result;
 }
 
 Vector &CUNN::multiply(const Matrix &w, const Vector &x, Vector &result)
@@ -42,13 +43,13 @@ Vector &CUNN::add(const Vector &x, const Vector &b, Vector &result)
 
 Vector &CUNN::sigmoid(Vector &x)
 {
-    Vector result = Vector(x);
-    return cu_utility::cuSigmoid(x, result);
+    return cu_utility::cuSigmoid(x);
 }
 
 Vector &CUNN::d_sigmoid(Vector &x)
 {
     // TODO: insert return statement here
+    return x;
 }
 
 CUNN::~CUNN()

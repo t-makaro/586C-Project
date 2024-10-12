@@ -59,7 +59,7 @@ int main() {
   std::vector<float> res_gpusig(N);
 
   float sig = NN::sigmoid(0.4f);
-  cu_utility::cuSigmoid(t_gpusig, res_gpusig);
+  res_gpusig = cu_utility::cuSigmoid(t_gpusig);
 
   std::cout << "Cuda Sigmoid Result: " << res_gpusig[256] << std::endl;
   std::cout << "CPU Reference: " << sig << std::endl;
@@ -69,7 +69,7 @@ int main() {
   std::vector<float> res_gpudsig(N);
 
   float dsig = NN::d_sigmoid(0.4f);
-  cu_utility::cuDSigmoid(t_gpudsig, res_gpudsig);
+  res_gpudsig = cu_utility::cuDSigmoid(t_gpudsig);
 
   std::cout << "Cuda dSigmoid Result: " << res_gpudsig[256] << std::endl;
   std::cout << "CPU Reference: " << dsig << std::endl;

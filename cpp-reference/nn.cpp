@@ -22,7 +22,7 @@ public:
   static float sigmoid(float x);
   static float d_sigmoid(float x);
 
-private:
+protected:
   int numLayers;
   std::vector<int> layers;
   std::vector<Matrix> weights;
@@ -34,15 +34,18 @@ private:
   std::vector<Matrix> dWeights;
   std::vector<Vector> dBiases;
 
-  static Vector &forwardLayer(const Matrix &w, const Vector &b, const Vector &a,
-                              Vector &result);
   void updateFromBatch(const Matrix batch, const float learningRate);
+
+private:
+
   static Vector &multiply(const Matrix &w, const Vector &x, Vector &result);
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
   static Vector &sigmoid(Vector &x);
   static Vector &d_sigmoid(Vector &x);
-  Vector &sigmoid(const Vector &x, Vector &result);
-
+Vector &sigmoid(const Vector &x, Vector &result);
+  static Vector &forwardLayer(const Matrix &w, const Vector &b, const Vector &a,
+                              Vector &result);
+                              
   void backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
                 const Vector &testData, const int testLabel);
   void cost_derivative(const Vector &last_activation, const int label, Vector &result);

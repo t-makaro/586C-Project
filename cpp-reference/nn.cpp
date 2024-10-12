@@ -29,6 +29,7 @@ private:
   std::vector<Vector> biases;
   // preallocate memory for forward pass
   std::vector<Vector> activations;
+  std::vector<Vector> zs;
   // preallocate memory for backward pass
   std::vector<Matrix> dWeights;
   std::vector<Vector> dBiases;
@@ -40,11 +41,16 @@ private:
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
   static Vector &sigmoid(Vector &x);
   static Vector &d_sigmoid(Vector &x);
-  
+  Vector &sigmoid(const Vector &x, Vector &result);
 
   void backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
                 const Vector &testData, const int testLabel);
-  static Vector cost_derivative(const Vector &last_activation, const int label);
+  void cost_derivative(const Vector &last_activation, const int label, Vector &result);
+  void activation_derivative(const Matrix &weights, Vector &z, Vector &previous);
+  Vector &forwardZ(const Matrix &w, const Vector &b, const Vector &a, Vector &result);
+  Vector &multiply_elementwise(const Vector &a, const Vector &b, Vector &result);
+  Matrix &outer_product(const Vector &a, const Vector &b, Matrix &result);
+  void transpose(const Matrix &a, Matrix &result);
 };
 
 NN::NN(std::vector<int> layers) : layers(layers) {
@@ -101,18 +107,58 @@ void NN::updateFromBatch(const Matrix batch, const float learningRate) {
 void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
                const Vector &testData, int testLabel){
   // TODO
+  activations[0] = testData;
+  for (int i = 1; i < numLayers; i++){
+    forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
+    sigmoid(zs[i], activations[i]);
+  }
+  Vector delta;
+  for (int i = 0; i < numLayers; i++){
+    if (i==0){
+      cost_derivative(activations[activations.size()-1], testLabel, delta);
+    }
+    else{
+      
+    }
+    multiply_elementwise(d_sigmoid(zs[numLayers-1-i]), delta, dBiases_output[numLayers-1-i]);
+    outer_product(activations[numLayers-2-i], dBiases_output[numLayers-1-i], dWeights_output[numLayers-1-i]);
+  }
 }
 
-static Vector cost_derivative(const Vector &last_activation, const int label){
-  Vector ans(10, 0);
+void NN::cost_derivative(const Vector &last_activation, const int label, Vector &result){
   for (int i=0; i < 10; i++){
       if (i == label){
-        ans[i] = -1/last_activation[i];
+        result[i] = -1/last_activation[i];
       } else {
-        ans[i] = 1/(1-last_activation[i]);
+        result[i] = 1/(1-last_activation[i]);
       }
   }
-  return ans;
+  return;
+}
+
+void NN::activation_derivative(const Matrix &weights, Vector &z, Vector &previous){
+
+  d_sigmoid(z);
+  multiply_elementwise(z, previous, previous);
+}
+
+void NN::transpose(const Matrix &a, Matrix &result){
+  // Get the dimensions of the input matrix 'a'
+  int rows = a.size();
+  int cols = a[0].size();
+
+  // Resize the result matrix to hold the transpose (cols x rows)
+  result.resize(cols);
+  for (int i = 0; i < cols; ++i) {
+      result[i].resize(rows);
+  }
+
+  // Perform the transpose operation
+  for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+          result[j][i] = a[i][j];
+      }
+  }
 }
 
 float NN::evaluate(const Matrix &testData, const std::vector<int> &testLabels) {
@@ -155,11 +201,21 @@ Vector &NN::forwardLayer(const Matrix &w, const Vector &b, const Vector &a,
   return sigmoid(add(multiply(w, a, result), b, result));
 }
 
+Vector &NN::forwardZ(const Matrix &w, const Vector &b, const Vector &a, Vector &result){
+  return add(multiply(w, a, result), b, result);
+}
+
 Vector &NN::sigmoid(Vector &x) {
   for (int i = 0; i < x.size(); i++) {
     x[i] = sigmoid(x[i]);
   }
   return x;
+}
+Vector &NN::sigmoid(const Vector &x, Vector &result) {
+  for (int i = 0; i < x.size(); i++) {
+    result[i] = sigmoid(x[i]);
+  }
+  return result;
 }
 Vector &NN::d_sigmoid(Vector &x) {
   for (int i = 0; i < x.size(); i++) {
@@ -167,8 +223,6 @@ Vector &NN::d_sigmoid(Vector &x) {
   }
   return x;
 }
-
-
 
 float NN::sigmoid(float x) { return 1.0 / (1.0 + exp(-x)); }
 float NN::d_sigmoid(float x) {
@@ -187,6 +241,22 @@ Vector &NN::multiply(const Matrix &w, const Vector &x, Vector &result) {
     result[i] = sum;
   }
 
+  return result;
+}
+
+Vector &NN::multiply_elementwise(const Vector &a, const Vector &b, Vector &result){
+  for (int i = 0; i < a.size(); i++){
+    result[i] = a[i]*b[i];
+  }
+  return result;
+}
+
+Matrix &NN::outer_product(const Vector &a, const Vector &b, Matrix &result){
+  for (int i = 0; i <  a.size(); i++){
+    for (int j = 0; j < b.size(); j++){
+      result[i][j] = a[i]*b[j];
+    }
+  }
   return result;
 }
 

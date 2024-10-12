@@ -12,7 +12,7 @@ public:
   ~NN();
 
   Vector &forward(const Vector &x, Vector &result);
-  void train(const Matrix trainingData, const int iterations,
+  void train(const Matrix trainingData, const Vector trainingLabels, const int iterations,
              const int batchSize, float learningRate);
   float evaluate(const Matrix &testData, const std::vector<int> &testLabels);
 
@@ -34,12 +34,14 @@ protected:
   std::vector<Matrix> dWeights;
   std::vector<Vector> dBiases;
 
-  void updateFromBatch(const Matrix batch, const float learningRate);
+  void updateFromBatch(const Matrix batch, const Vector labels, const float learningRate);
 
 private:
 
   static Vector &multiply(const Matrix &w, const Vector &x, Vector &result);
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
+  Vector &add(const Matrix &x, const Matrix &b, Matrix &result, const float scale);
+  Vector &add(const Vector &x, const Vector &b, Vector &result, const float scale);
   static Vector &sigmoid(Vector &x);
   static Vector &d_sigmoid(Vector &x);
   Vector &sigmoid(const Vector &x, Vector &result);
@@ -98,14 +100,25 @@ Vector &NN::forward(const Vector &x, Vector &result) {
   return result;
 }
 
-void NN::train(const Matrix trainingData, const int iterations,
+void NN::train(const Matrix trainingData, const Vector trainingLabels, const int iterations,
                const int batchSize, float learningRate) {
   // TODO
 }
 
-void NN::updateFromBatch(const Matrix batch, const float learningRate) {
-  // TODO
+void NN::updateFromBatch(const Matrix batch, const Vector labels, const float learningRate) {
+  int length = labels.size();
+  assert(length == batch.size());
+
+  for (int i = 0; i < length; i++){
+    backwards(dWeights, dBiases, batch[i], labels[i]);
+    for (int i=0; i<weights.size(); i++){
+      add(weights[i], dWeights[i], weights[i], learningRate/length);
+      add(biases[i], dBiases[i], biases[i], learningRate/length);
+    }
+  }
 }
+
+
 
 void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dBiases_output, 
                const Vector &testData, int testLabel){
@@ -271,6 +284,25 @@ Vector &NN::add(const Vector &x, const Vector &b, Vector &result) {
 
   for (int i = 0; i < x.size(); i++) {
     result[i] = x[i] + b[i];
+  }
+  return result;
+}
+Vector &NN::add(const Vector &x, const Vector &b, Vector &result, const float scale) {
+  assert(x.size() == b.size() && x.size() == result.size());
+
+  for (int i = 0; i < x.size(); i++) {
+    result[i] = x[i] + b[i] * scale;
+  }
+  return result;
+}
+
+Matrix &NN::add(const Matrix &x, const Matrix &b, Matrix &result, const float scale) {
+  assert(x.size() == b.size() && x.size() == result.size());
+
+  for (int i = 0; i < x.size(); i++) {
+    for (int j = 0; j < x[0].size(); j++){
+      result[i][j] = x[i][j] + b[i][j] * scale;
+    }
   }
   return result;
 }

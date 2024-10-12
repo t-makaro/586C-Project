@@ -42,7 +42,7 @@ private:
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
   static Vector &sigmoid(Vector &x);
   static Vector &d_sigmoid(Vector &x);
-Vector &sigmoid(const Vector &x, Vector &result);
+  Vector &sigmoid(const Vector &x, Vector &result);
   static Vector &forwardLayer(const Matrix &w, const Vector &b, const Vector &a,
                               Vector &result);
                               

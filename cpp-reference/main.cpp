@@ -44,15 +44,7 @@ int main() {
 
   // NN 3: Train on the training set
 
-  Matrix temp = nn.sliceMatrix(csvTestData, 0, 10);
-  for (int i = 0; i < temp.size(); i++){
-    for (int j = 0; j < temp[0].size(); j++){
-      std::cout << temp[i][j] << " ";
-    }
-    std::cout << std::endl;
-  }
-
-  //nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
+  nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
 
   // NN 4: Forward Pass Test Set
   std::cout << "Evaluate over test set after training..." << std::endl;

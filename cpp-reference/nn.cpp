@@ -102,7 +102,12 @@ Vector &NN::forward(const Vector &x, Vector &result) {
 
 void NN::train(const Matrix trainingData, const Vector trainingLabels, const int iterations,
                const int batchSize, float learningRate) {
-  // TODO
+  for (int i=0; i < trainingData.size(); i += batchSize){
+      Matrix sampleData = sliceMatrix(trainingData, i, i+batchSize);
+      Vector sampleLabels = sliceVector(trainingLabels, i, i+batchSize);
+
+      updateFromBatch(sampleData, sampleLabels, learningRate);
+  }
 }
 
 void NN::updateFromBatch(const Matrix batch, const Vector labels, const float learningRate) {
@@ -305,4 +310,16 @@ Matrix &NN::add(const Matrix &x, const Matrix &b, Matrix &result, const float sc
     }
   }
   return result;
+}
+
+Matrix sliceMatrix(const Matrix& matrix, size_t start_row, size_t end_row) {
+    // Ensure end_row doesn't exceed the size of the matrix.
+    end_row = std::min(end_row, matrix.size());
+    return Matrix(matrix.begin() + start_row, matrix.begin() + end_row);
+}
+
+Vector sliceVector(const Vector& vec, size_t start_index, size_t end_index) {
+    // Ensure end_index doesn't exceed the size of the vector.
+    end_index = std::min(end_index, vec.size());
+    return Vector(vec.begin() + start_index, vec.begin() + end_index);
 }

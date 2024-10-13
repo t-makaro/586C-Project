@@ -276,11 +276,8 @@ Matrix &CUNN::add(const Matrix &x, const Matrix &b, Matrix &result, const float 
 }
 
 Vector &CUNN::sigmoid(const Vector &x, Vector &result) {
-    // TODO: In place CUDA kernel?
-  for (int i = 0; i < x.size(); i++) {
-    result[i] = sigmoid(x[i]);
-  }
-  return result;
+  result.assign(x.begin(), x.end());
+  return cu_utility::cuSigmoid(result);
 }
 
 Vector &CUNN::sigmoid(Vector &x)

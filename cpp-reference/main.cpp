@@ -39,15 +39,23 @@ int main() {
 
   // NN 2: Forward Pass Training Set
 
-  std::cout << "Forward pass over training set..." << std::endl;
-  nn.evaluate(csvTrainData, trainLabels);
+  std::cout << "Evaluate test data before training..." << std::endl;
+  nn.evaluate(csvTestData, testLabels);
 
   // NN 3: Train on the training set
+
+  Matrix temp = nn.sliceMatrix(csvTestData, 0, 10);
+  for (int i = 0; i < temp.size(); i++){
+    for (int j = 0; j < temp[0].size(); j++){
+      std::cout << temp[i][j] << " ";
+    }
+    std::cout << std::endl;
+  }
 
   //nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
 
   // NN 4: Forward Pass Test Set
-  std::cout << "Forward pass over test set..." << std::endl;
+  std::cout << "Evaluate over test set after training..." << std::endl;
   nn.evaluate(csvTestData, testLabels);
 
   return 0;

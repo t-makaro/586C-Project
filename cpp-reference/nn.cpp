@@ -22,7 +22,6 @@ public:
   static float sigmoid(float x);
   static float d_sigmoid(float x);
 
-protected:
   int numLayers;
   std::vector<int> layers;
   std::vector<Matrix> weights;
@@ -35,8 +34,6 @@ protected:
   std::vector<Vector> dBiases;
 
   void updateFromBatch(const Matrix batch, const std::vector<int> labels, const float learningRate);
-
-private:
 
   static Vector &multiply(const Matrix &w, const Vector &x, Vector &result);
   static Vector &add(const Vector &x, const Vector &b, Vector &result);
@@ -104,11 +101,12 @@ Vector &NN::forward(const Vector &x, Vector &result) {
 
 void NN::train(const Matrix trainingData, const std::vector<int> trainingLabels, const int iterations,
                const int batchSize, float learningRate) {
-  for (int i=0; i < trainingData.size(); i += batchSize){
+  for (int j = 0; j < iterations; j++){
+    for (int i=0; i < trainingData.size(); i += batchSize){
       Matrix sampleData = sliceMatrix(trainingData, i, i+batchSize);
       std::vector<int> sampleLabels = sliceVector(trainingLabels, i, i+batchSize);
-
       updateFromBatch(sampleData, sampleLabels, learningRate);
+    }
   }
 }
 
@@ -217,7 +215,7 @@ float NN::evaluate(const Matrix &testData, const std::vector<int> &testLabels) {
   std::cout << "done." << std::endl;
   std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
   float accuracy = (float)numCorrect / testData.size();
-  std::cout << "Train Accuracy: " << accuracy
+  std::cout << "Accuracy: " << accuracy
             << std::endl;
   return accuracy;
 }

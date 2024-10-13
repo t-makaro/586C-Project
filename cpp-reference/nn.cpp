@@ -12,7 +12,7 @@ public:
   ~NN();
 
   Vector &forward(const Vector &x, Vector &result);
-  void train(const Matrix trainingData, const Vector trainingLabels, const int iterations,
+  void train(const Matrix trainingData, const std::vector<int> trainingLabels, const int iterations,
              const int batchSize, float learningRate);
   float evaluate(const Matrix &testData, const std::vector<int> &testLabels);
 
@@ -34,7 +34,7 @@ protected:
   std::vector<Matrix> dWeights;
   std::vector<Vector> dBiases;
 
-  void updateFromBatch(const Matrix batch, const Vector labels, const float learningRate);
+  void updateFromBatch(const Matrix batch, const std::vector<int> labels, const float learningRate);
 
 private:
 
@@ -56,6 +56,8 @@ private:
   Vector &multiply_elementwise(const Vector &a, const Vector &b, Vector &result);
   Matrix &outer_product(const Vector &a, const Vector &b, Matrix &result);
   void transpose(const Matrix &a, Matrix &result);
+  Matrix sliceMatrix(const Matrix &matrix, size_t start_row, size_t end_row);
+  std::vector<int> sliceVector(const std::vector<int> &vec, size_t start_index, size_t end_index);
 };
 
 NN::NN(std::vector<int> layers) : layers(layers) {
@@ -100,17 +102,17 @@ Vector &NN::forward(const Vector &x, Vector &result) {
   return result;
 }
 
-void NN::train(const Matrix trainingData, const Vector trainingLabels, const int iterations,
+void NN::train(const Matrix trainingData, const std::vector<int> trainingLabels, const int iterations,
                const int batchSize, float learningRate) {
   for (int i=0; i < trainingData.size(); i += batchSize){
       Matrix sampleData = sliceMatrix(trainingData, i, i+batchSize);
-      Vector sampleLabels = sliceVector(trainingLabels, i, i+batchSize);
+      std::vector<int> sampleLabels = sliceVector(trainingLabels, i, i+batchSize);
 
       updateFromBatch(sampleData, sampleLabels, learningRate);
   }
 }
 
-void NN::updateFromBatch(const Matrix batch, const Vector labels, const float learningRate) {
+void NN::updateFromBatch(const Matrix batch, const std::vector<int> labels, const float learningRate) {
   int length = labels.size();
   assert(length == batch.size());
 
@@ -312,14 +314,14 @@ Matrix &NN::add(const Matrix &x, const Matrix &b, Matrix &result, const float sc
   return result;
 }
 
-Matrix sliceMatrix(const Matrix& matrix, size_t start_row, size_t end_row) {
+Matrix NN::sliceMatrix(const Matrix &matrix, size_t start_row, size_t end_row) {
     // Ensure end_row doesn't exceed the size of the matrix.
     end_row = std::min(end_row, matrix.size());
     return Matrix(matrix.begin() + start_row, matrix.begin() + end_row);
 }
 
-Vector sliceVector(const Vector& vec, size_t start_index, size_t end_index) {
+std::vector<int> NN::sliceVector(const std::vector<int> &vec, size_t start_index, size_t end_index) {
     // Ensure end_index doesn't exceed the size of the vector.
     end_index = std::min(end_index, vec.size());
-    return Vector(vec.begin() + start_index, vec.begin() + end_index);
+    return std::vector<int>(vec.begin() + start_index, vec.begin() + end_index);
 }

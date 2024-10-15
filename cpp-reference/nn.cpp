@@ -65,8 +65,10 @@ NN::NN(std::vector<int> layers) : layers(layers) {
   activations.reserve(numLayers);
   for (int i = 0; i < numLayers; i++) {
     activations.push_back(Vector(layers[i], 0.0));
-    dWeights.push_back(Matrix(layers[i], Vector(layers[i + 1], 0.0)));
-    dBiases.push_back(Vector(layers[i + 1], 0.0));
+    if(i < numLayers - 1){
+        dWeights.push_back(Matrix(layers[i], Vector(layers[i + 1], 0.0)));
+        dBiases.push_back(Vector(layers[i + 1], 0.0));
+    }
   }
 }
 

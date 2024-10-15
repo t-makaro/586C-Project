@@ -1,0 +1,11 @@
+﻿  ReferenceCPP.cpp
+D:\2023F_hw\586C-Project\ReferenceCPP\ReferenceCPP.cpp(47,48): warning C4305: “参数”: 从“double”到“float”截断
+  nn.cpp
+D:\2023F_hw\586C-Project\ReferenceCPP\nn.cpp(4,28): warning C4267: “=”: 从“size_t”转换到“int”，可能丢失数据
+D:\2023F_hw\586C-Project\ReferenceCPP\nn.cpp(59,14): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+D:\2023F_hw\586C-Project\ReferenceCPP\nn.cpp(116,12): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+D:\2023F_hw\586C-Project\ReferenceCPP\nn.cpp(117,12): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+D:\2023F_hw\586C-Project\ReferenceCPP\nn.cpp(196,41): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+D:\2023F_hw\586C-Project\ReferenceCPP\nn.cpp(199,13): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+  正在生成代码...
+  ReferenceCPP.vcxproj -> D:\2023F_hw\586C-Project\ReferenceCPP\x64\Debug\ReferenceCPP.exe

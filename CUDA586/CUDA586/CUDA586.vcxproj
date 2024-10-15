@@ -77,6 +77,8 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CudaCompile Include="cunn.cu" />
+    <CudaCompile Include="cu_utility.cu" />
     <CudaCompile Include="kernel.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
@@ -85,6 +87,8 @@
     <ClCompile Include="utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cunn.cuh" />
+    <ClInclude Include="cu_utility.cuh" />
     <ClInclude Include="test.h" />
     <ClInclude Include="utility.h" />
   </ItemGroup>

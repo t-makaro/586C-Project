@@ -1,0 +1,12 @@
+﻿  Compiling CUDA source file main.cu...
+  
+  C:\Work_shin\586C-Project\CUDA586\CUDA586>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.39.33519\bin\HostX64\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include"     --keep-dir x64\Release  -maxrregcount=0   --machine 64 --compile -cudart static    -DWIN32 -DWIN64 -DNDEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /O2 /FS   /MD " -Xcompiler "/Fdx64\Release\vc143.pdb" -o C:\Work_shin\586C-Project\CUDA586\CUDA586\x64\Release\main.cu.obj "C:\Work_shin\586C-Project\CUDA586\CUDA586\main.cu" 
+  main.cu
+  tmpxft_0000a3d4_00000000-7_main.cudafe1.cpp
+     Creating library C:\Work_shin\586C-Project\CUDA586\x64\Release\CUDA586.lib and object C:\Work_shin\586C-Project\CUDA586\x64\Release\CUDA586.exp
+LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  Generating code
+  Previous IPDB and IOBJ mismatch, fall back to full compilation.
+  All 1835 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  CUDA586.vcxproj -> C:\Work_shin\586C-Project\CUDA586\x64\Release\CUDA586.exe

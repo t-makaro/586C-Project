@@ -147,4 +147,5 @@ C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include\texture_types.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include\vector_functions.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include\vector_functions.hpp
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include\vector_types.h
-C:\Work_shin\586C-Project\CUDA586\CUDA586\cu_utility.cu
+C:\Work_shin\586C-Project\CUDA586\CUDA586\cunn.cuh
+C:\Work_shin\586C-Project\CUDA586\CUDA586\cu_utility.cuh

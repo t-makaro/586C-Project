@@ -93,17 +93,6 @@ __global__ void global_forwardLayer(const float *W, const float *b,
     sigmoid(result, M);
 }
 
-__global__ void global_forwardLayer(const float *W, const float *b,
-                                    const float *A, float *result, int M,
-                                    int N) {
-    // multiply
-    matMulVec(W, A, result, M, N);
-    // add
-    vectorAdd(result, b, result, N);
-    // activate
-    sigmoid(result, M);
-}
-
 // APIs
 class cu_utility {
    private:

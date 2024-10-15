@@ -133,11 +133,9 @@ int main() {
     // NN 3: CU forwardLayer test
     std::cout << "Forward pass over test set using CUDA forwardLayer..."
               << std::endl;
-    // nn.evaluate(csvTestData, testLabels);
-    std::vector<float> result;
-    nn.forward(csvTrainData[0], result);
+    nn.evaluate(csvTestData, testLabels);
 
-    std::cout << "forwardLayer passed" << std::endl;
+    std::cout << "success." << std::endl;
 
     return 0;
 }

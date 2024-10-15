@@ -1,1 +1,24 @@
-﻿  CUDA586.vcxproj -> D:\2023F_hw\586C-Project\CUDA586\x64\Release\CUDA586.exe
+﻿  Compiling CUDA source file cunn.cu...
+  
+  D:\2023F_hw\586C-Project\CUDA586\CUDA586>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\bin\HostX64\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include"     --keep-dir x64\Release  -maxrregcount=0   --machine 64 --compile -cudart static    -DWIN32 -DWIN64 -DNDEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /O2 /FS   /MD " -Xcompiler "/Fdx64\Release\vc143.pdb" -o D:\2023F_hw\586C-Project\CUDA586\CUDA586\x64\Release\cunn.cu.obj "D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu" 
+  cunn.cu
+  tmpxft_00005e68_00000000-7_cunn.cudafe1.cpp
+D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu(4): warning C4267: “=”: 从“size_t”转换到“int”，可能丢失数据
+D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu(37): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu(40): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu(61): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu(65): warning C4244: “参数”: 从“const _Ty”转换到“const int”，可能丢失数据
+          with
+          [
+              _Ty=float
+          ]
+D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu(134): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+D:\2023F_hw\586C-Project\CUDA586\CUDA586\cunn.cu(135): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+    正在创建库 D:\2023F_hw\586C-Project\CUDA586\x64\Release\CUDA586.lib 和对象 D:\2023F_hw\586C-Project\CUDA586\x64\Release\CUDA586.exp
+LINK : warning LNK4098: 默认库“LIBCMT”与其他库的使用冲突；请使用 /NODEFAULTLIB:library
+  正在生成代码
+  0 of 1848 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  已完成代码的生成
+  CUDA586.vcxproj -> D:\2023F_hw\586C-Project\CUDA586\x64\Release\CUDA586.exe

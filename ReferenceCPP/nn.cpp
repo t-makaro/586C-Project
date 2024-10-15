@@ -6,8 +6,10 @@ NN::NN(std::vector<int> layers) : layers(layers) {
     biases.reserve(numLayers - 1);
 
     activations.reserve(numLayers);
+    zs.reserve(numLayers);
     for (int i = 0; i < numLayers; i++) {
         activations.push_back(Vector(layers[i], 0.0));
+        zs.push_back(Vector(layers[i], 0.0));
         if (i < numLayers - 1) {
             dWeights.push_back(Matrix(layers[i], Vector(layers[i + 1], 0.0)));
             dBiases.push_back(Vector(layers[i + 1], 0.0));
@@ -77,7 +79,7 @@ void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dB
     forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
     sigmoid(zs[i], activations[i]);
   }
-  Vector delta;
+  Vector delta(10,0);
   for (int i = 0; i < numLayers-1; i++){
     if (i==0){
       cost_derivative(activations[activations.size()-1], testLabel, delta);

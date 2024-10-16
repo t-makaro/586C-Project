@@ -23,6 +23,10 @@ int main() {
 
     // Util 2: Read Weights and Biases
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    std::cout << "Reading in weights..." << std::endl;
+>>>>>>> 073383c (merge fix)
     auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");
     auto weights_a1 = utility::ReadWeight("../data/weights_a1.csv");
     auto biases_a2 = utility::ReadBias("../data/biases_a2.csv");
@@ -56,12 +60,8 @@ int main() {
 
     // NN 3: Train on the training set
 
-<<<<<<< HEAD
+    //std::cout << "Starting training..." << std::endl;
     //nn.train(csvTestData, testLabels, 1, 10, 0.1);
-=======
-    std::cout << "Starting training..." << std::endl;
-    nn.train(csvTestData, testLabels, 1, 10, 0.1);
->>>>>>> fbf0d7b (bug fix)
 
     // NN 4: Forward Pass Test Set
     std::cout << "Evaluate accuracy over test data" << std::endl;

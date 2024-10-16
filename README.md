@@ -2,7 +2,7 @@
 An mnist digit recognizer built in cuda
 
 ## Getting Started
-Each implementation folder (cpp-reference, python-reference, CUDA586) contains a readme file with specific instructions.
+Each implementation folder (ReferenceCPP, python-reference, CUDA586) contains a readme file with specific instructions or a visual studio 2022 solution file.
 
 The data.zip file will need to be extracted to ```./data/*```. Ensure this is flat and not ```./data/data/*```.
 

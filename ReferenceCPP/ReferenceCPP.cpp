@@ -22,14 +22,26 @@ int main() {
     std::cout << "Test labels size: " << testLabels.size() << std::endl;
 
     // Util 2: Read Weights and Biases
+<<<<<<< HEAD
     auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");
     auto weights_a1 = utility::ReadWeight("../data/weights_a1.csv");
     auto biases_a2 = utility::ReadBias("../data/biases_a2.csv");
     auto weights_a2 = utility::ReadWeight("../data/weights_a2.csv");
     auto biases_o = utility::ReadBias("../data/biases_o.csv");
     auto weights_o = utility::ReadWeight("../data/weights_o.csv");
+=======
+    std::cout << "Reading in weights..." << std::endl;
+    auto biases_a1 = utility::ReadBias("../data/biases_a1_init.csv");
+    auto weights_a1 = utility::ReadWeight("../data/weights_a1_init.csv");
+    auto biases_a2 = utility::ReadBias("../data/biases_a2_init.csv");
+    auto weights_a2 = utility::ReadWeight("../data/weights_a2_init.csv");
+    auto biases_o = utility::ReadBias("../data/biases_o_init.csv");
+    auto weights_o = utility::ReadWeight("../data/weights_o_init.csv");
+>>>>>>> fbf0d7b (bug fix)
 
     // NN 0: Init Neural Network
+    std::cout << "Initializing NN..." << std::endl;
+
     std::vector<int> layers = { 784, 300, 300, 10 };
     NN nn(layers);
 
@@ -44,7 +56,12 @@ int main() {
 
     // NN 3: Train on the training set
 
+<<<<<<< HEAD
     //nn.train(csvTestData, testLabels, 1, 10, 0.1);
+=======
+    std::cout << "Starting training..." << std::endl;
+    nn.train(csvTestData, testLabels, 1, 10, 0.1);
+>>>>>>> fbf0d7b (bug fix)
 
     // NN 4: Forward Pass Test Set
     std::cout << "Evaluate accuracy over test data" << std::endl;

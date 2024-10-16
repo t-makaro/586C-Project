@@ -253,7 +253,7 @@ std::vector<float>& cu_utility::cuForwardLayer(
     int threadsPerBlock = 256;
     int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
 
-    global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_W, d_x, d_b, d_y,
+    global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_W, d_b, d_x, d_y,
         M, N);
 
     // Copy result from device to host

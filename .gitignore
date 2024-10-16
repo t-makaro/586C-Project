@@ -53,8 +53,8 @@ build/
 cmake-build-debug/
 
 # Visual Studio build stuff
-CUDA586/CUDA586/
+CUDA586/CUDA586/x64/
 CUDA586/x64/
-ReferenceCPP/ReferenceCPP/
+ReferenceCPP/ReferenceCPP/x64/
 ReferenceCPP/x64/
 

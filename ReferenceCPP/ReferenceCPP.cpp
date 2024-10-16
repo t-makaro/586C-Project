@@ -22,26 +22,13 @@ int main() {
     std::cout << "Test labels size: " << testLabels.size() << std::endl;
 
     // Util 2: Read Weights and Biases
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     std::cout << "Reading in weights..." << std::endl;
->>>>>>> 073383c (merge fix)
     auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");
     auto weights_a1 = utility::ReadWeight("../data/weights_a1.csv");
     auto biases_a2 = utility::ReadBias("../data/biases_a2.csv");
     auto weights_a2 = utility::ReadWeight("../data/weights_a2.csv");
     auto biases_o = utility::ReadBias("../data/biases_o.csv");
     auto weights_o = utility::ReadWeight("../data/weights_o.csv");
-=======
-    std::cout << "Reading in weights..." << std::endl;
-    auto biases_a1 = utility::ReadBias("../data/biases_a1_init.csv");
-    auto weights_a1 = utility::ReadWeight("../data/weights_a1_init.csv");
-    auto biases_a2 = utility::ReadBias("../data/biases_a2_init.csv");
-    auto weights_a2 = utility::ReadWeight("../data/weights_a2_init.csv");
-    auto biases_o = utility::ReadBias("../data/biases_o_init.csv");
-    auto weights_o = utility::ReadWeight("../data/weights_o_init.csv");
->>>>>>> fbf0d7b (bug fix)
 
     // NN 0: Init Neural Network
     std::cout << "Initializing NN..." << std::endl;

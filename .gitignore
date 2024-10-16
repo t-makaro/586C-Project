@@ -51,5 +51,10 @@ data/
 build/
 .cmake/
 cmake-build-debug/
-CUDA586/x64/*
-CUDA586/CUDA586/x64/*
+
+# Visual Studio build stuff
+CUDA586/CUDA586/
+CUDA586/x64/
+ReferenceCPP/ReferenceCPP/
+ReferenceCPP/x64/
+

@@ -97,9 +97,9 @@ void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dB
 void NN::cost_derivative(const Vector &last_activation, const int label, Vector &result){
   for (int i=0; i < 10; i++){
       if (i == label){
-        result[i] = -1/last_activation[i];
+        result[i] = -1.0f/last_activation[i];
       } else {
-        result[i] = 1/(1-last_activation[i]);
+        result[i] = 1.0f/(1.0f-last_activation[i]);
       }
   }
   return;

@@ -1,15 +1,11 @@
 #include <chrono>
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "test.h"
 #include "utility.h"
 #include "cu_utility.cuh"
 #include "cunn.cuh"
 
 int main() {
-     auto t = test();
-     t.Hello();
-
      // NN 0: Init Neural Network
      std::vector<int> layers = { 784, 300, 300, 10 };
      CUNN nn(layers);
@@ -101,11 +97,11 @@ int main() {
 
     // NN 2: Forward Pass Training Set
 
-    std::cout << "Forward pass over training set..." << std::endl;
+	std::cout << "Evaluating on training set" << std::endl;
     nn.evaluate(csvTrainData, trainLabels);
 
     // NN 3: Forward Pass Test Set
-    std::cout << "Forward pass over test set..." << std::endl;
+    std::cout << "Evaluating on test set" << std::endl;
     nn.evaluate(csvTestData, testLabels);
 
     // cudaDeviceReset must be called before exiting in order for profiling and

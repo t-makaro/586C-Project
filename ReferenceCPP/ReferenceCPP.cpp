@@ -3,14 +3,14 @@
 
 int main() {
     // Util 0: Read Train Data
-    vector<int> trainLabels;
-    trainLabels.reserve(60000);
-    std::cout << "Reading train data..." << std::endl;
-    auto csvTrainData = utility::ReadDatasetCSV("../data/train.csv", trainLabels);
-    std::cout << "done." << std::endl;
-    std::cout << "Training data size: " << csvTrainData.size() << "x"
-        << csvTrainData[0].size() << std::endl;
-    std::cout << "Training labels size: " << trainLabels.size() << std::endl;
+    //vector<int> trainLabels;
+    //trainLabels.reserve(60000);
+    //std::cout << "Reading train data..." << std::endl;
+    //auto csvTrainData = utility::ReadDatasetCSV("../data/train.csv", trainLabels);
+    //std::cout << "done." << std::endl;
+    //std::cout << "Training data size: " << csvTrainData.size() << "x"
+    //    << csvTrainData[0].size() << std::endl;
+    //std::cout << "Training labels size: " << trainLabels.size() << std::endl;
 
     // Util 1: Read Test Data
     vector<int> testLabels;
@@ -39,12 +39,12 @@ int main() {
 
     // NN 2: Forward Pass Training Set
 
-    std::cout << "Evaluate test data before training..." << std::endl;
-    nn.evaluate(csvTestData, testLabels);
+    // std::cout << "Evaluate test data before training..." << std::endl;
+    //nn.evaluate(csvTestData, testLabels);
 
     // NN 3: Train on the training set
 
-    nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
+    nn.train(csvTestData, testLabels, 1, 10, 0.1);
 
     // NN 4: Forward Pass Test Set
     std::cout << "Evaluate over test set after training..." << std::endl;

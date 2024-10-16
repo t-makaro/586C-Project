@@ -11,7 +11,7 @@ NN::NN(std::vector<int> layers) : layers(layers) {
         activations.push_back(Vector(layers[i], 0.0));
         zs.push_back(Vector(layers[i], 0.0));
         if (i < numLayers - 1) {
-            dWeights.push_back(Matrix(layers[i], Vector(layers[i + 1], 0.0)));
+            dWeights.push_back(Matrix(layers[i+1], Vector(layers[i], 0.0)));
             dBiases.push_back(Vector(layers[i + 1], 0.0));
         }
     }
@@ -82,13 +82,15 @@ void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dB
   Vector delta(10,0);
   for (int i = 0; i < numLayers-1; i++){
     if (i==0){
+        // Output layer
       cost_derivative(activations[activations.size()-1], testLabel, delta);
     }
     else{
-      activation_derivative(weights[numLayers-i], zs[numLayers-i], delta);
+
+      activation_derivative(weights[weights.size() - i], zs[zs.size() - i], delta);
     }
-    multiply_elementwise(d_sigmoid(zs[numLayers-1-i]), delta, dBiases_output[numLayers-1-i]);
-    outer_product(activations[numLayers-2-i], dBiases_output[numLayers-1-i], dWeights_output[numLayers-1-i]);
+    multiply_elementwise(d_sigmoid(zs[numLayers-1-i]), delta, dBiases_output[numLayers-2-i]);
+    outer_product(dBiases_output[dBiases_output.size() - 1 - i], activations[activations.size()-1-i], dWeights_output[dWeights_output.size()-1-i]);
   }
 }
 
@@ -108,7 +110,7 @@ void NN::activation_derivative(const Matrix &weights, Vector &z, Vector &previou
   multiply_elementwise(z, previous, previous);
   Matrix temp;
   transpose(weights, temp);
-  Vector result;
+  Vector result(temp.size(), 0.0f);
   multiply(temp, previous, result);
   previous = result;
 }

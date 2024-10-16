@@ -51,3 +51,5 @@ data/
 build/
 .cmake/
 cmake-build-debug/
+CUDA586/x64/*
+CUDA586/CUDA586/x64/*

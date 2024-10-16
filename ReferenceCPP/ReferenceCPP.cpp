@@ -2,15 +2,15 @@
 #include "utility.h"
 
 int main() {
-    // Util 0: Read Train Data
-    //vector<int> trainLabels;
-    //trainLabels.reserve(60000);
-    //std::cout << "Reading train data..." << std::endl;
-    //auto csvTrainData = utility::ReadDatasetCSV("../data/train.csv", trainLabels);
-    //std::cout << "done." << std::endl;
-    //std::cout << "Training data size: " << csvTrainData.size() << "x"
-    //    << csvTrainData[0].size() << std::endl;
-    //std::cout << "Training labels size: " << trainLabels.size() << std::endl;
+    //Util 0: Read Train Data
+    vector<int> trainLabels;
+    trainLabels.reserve(60000);
+    std::cout << "Reading train data..." << std::endl;
+    auto csvTrainData = utility::ReadDatasetCSV("../data/train.csv", trainLabels);
+    std::cout << "done." << std::endl;
+    std::cout << "Training data size: " << csvTrainData.size() << "x"
+        << csvTrainData[0].size() << std::endl;
+    std::cout << "Training labels size: " << trainLabels.size() << std::endl;
 
     // Util 1: Read Test Data
     vector<int> testLabels;
@@ -22,12 +22,12 @@ int main() {
     std::cout << "Test labels size: " << testLabels.size() << std::endl;
 
     // Util 2: Read Weights and Biases
-    auto biases_a1 = utility::ReadBias("../data/biases_a1_init.csv");
-    auto weights_a1 = utility::ReadWeight("../data/weights_a1_init.csv");
-    auto biases_a2 = utility::ReadBias("../data/biases_a2_init.csv");
-    auto weights_a2 = utility::ReadWeight("../data/weights_a2_init.csv");
-    auto biases_o = utility::ReadBias("../data/biases_o_init.csv");
-    auto weights_o = utility::ReadWeight("../data/weights_o_init.csv");
+    auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");
+    auto weights_a1 = utility::ReadWeight("../data/weights_a1.csv");
+    auto biases_a2 = utility::ReadBias("../data/biases_a2.csv");
+    auto weights_a2 = utility::ReadWeight("../data/weights_a2.csv");
+    auto biases_o = utility::ReadBias("../data/biases_o.csv");
+    auto weights_o = utility::ReadWeight("../data/weights_o.csv");
 
     // NN 0: Init Neural Network
     std::vector<int> layers = { 784, 300, 300, 10 };
@@ -39,15 +39,15 @@ int main() {
 
     // NN 2: Forward Pass Training Set
 
-    // std::cout << "Evaluate test data before training..." << std::endl;
-    //nn.evaluate(csvTestData, testLabels);
+    std::cout << "Evaluate accuracy over training data" << std::endl;
+    nn.evaluate(csvTrainData, trainLabels);
 
     // NN 3: Train on the training set
 
-    nn.train(csvTestData, testLabels, 1, 10, 0.1);
+    //nn.train(csvTestData, testLabels, 1, 10, 0.1);
 
     // NN 4: Forward Pass Test Set
-    std::cout << "Evaluate over test set after training..." << std::endl;
+    std::cout << "Evaluate accuracy over test data" << std::endl;
     nn.evaluate(csvTestData, testLabels);
 
     return 0;

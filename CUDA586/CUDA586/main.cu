@@ -101,8 +101,8 @@ int main() {
 
     // NN 2: Forward Pass Training Set
 
-    //std::cout << "Forward pass over training set..." << std::endl;
-    //nn.evaluate(csvTrainData, trainLabels);
+    std::cout << "Forward pass over training set..." << std::endl;
+    nn.evaluate(csvTrainData, trainLabels);
 
     // NN 3: Forward Pass Test Set
     std::cout << "Forward pass over test set..." << std::endl;

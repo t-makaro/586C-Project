@@ -90,9 +90,9 @@ void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dB
       activation_derivative(weights[weights.size() - i], zs[zs.size() - i], delta);
     }
     multiply_elementwise(d_sigmoid(zs[numLayers-1-i]), delta, dBiases_output[numLayers-2-i]);
-    outer_product(dBiases_output[dBiases_output.size() - 1 - i], activations[activations.size()-1-i], dWeights_output[dWeights_output.size()-1-i]);
+    outer_product(dBiases_output[dBiases_output.size() - 1 - i], activations[activations.size()-2-i], dWeights_output[dWeights_output.size()-1-i]);
+    return;
   }
-  return;
 }
 
 void NN::cost_derivative(const Vector &last_activation, const int label, Vector &result){
@@ -106,11 +106,11 @@ void NN::cost_derivative(const Vector &last_activation, const int label, Vector 
   return;
 }
 
-void NN::activation_derivative(const Matrix &weights, Vector &z, Vector &previous){
+void NN::activation_derivative(const Matrix &weightsMat, Vector &z, Vector &previous){
   d_sigmoid(z);
   multiply_elementwise(z, previous, previous);
   Matrix temp;
-  transpose(weights, temp);
+  transpose(weightsMat, temp);
   Vector result(temp.size(), 0.0f);
   multiply(temp, previous, result);
   previous = result;

@@ -3,14 +3,14 @@
 
 int main() {
     //Util 0: Read Train Data
-    vector<int> trainLabels;
+    /*vector<int> trainLabels;
     trainLabels.reserve(60000);
     std::cout << "Reading train data..." << std::endl;
     auto csvTrainData = utility::ReadDatasetCSV("../data/train.csv", trainLabels);
     std::cout << "done." << std::endl;
     std::cout << "Training data size: " << csvTrainData.size() << "x"
         << csvTrainData[0].size() << std::endl;
-    std::cout << "Training labels size: " << trainLabels.size() << std::endl;
+    std::cout << "Training labels size: " << trainLabels.size() << std::endl;*/
 
     // Util 1: Read Test Data
     vector<int> testLabels;
@@ -47,7 +47,7 @@ int main() {
 
     // NN 3: Train on the training set
 
-    nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], trainLabels[0]);
+    nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], testLabels[0]);
 
     //std::cout << "Starting training..." << std::endl;
     //nn.train(csvTrainData, trainLabels, 1, 10, 0.1);

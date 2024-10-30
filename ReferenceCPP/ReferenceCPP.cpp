@@ -42,17 +42,19 @@ int main() {
 
     // NN 2: Forward Pass Training Set
 
-    std::cout << "Evaluate accuracy over training data" << std::endl;
-    nn.evaluate(csvTrainData, trainLabels);
+    //std::cout << "Evaluate accuracy over training data" << std::endl;
+    //nn.evaluate(csvTestData, testLabels);
 
     // NN 3: Train on the training set
 
+    nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], trainLabels[0]);
+
     //std::cout << "Starting training..." << std::endl;
-    //nn.train(csvTestData, testLabels, 1, 10, 0.1);
+    //nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
 
     // NN 4: Forward Pass Test Set
-    std::cout << "Evaluate accuracy over test data" << std::endl;
-    nn.evaluate(csvTestData, testLabels);
+    //std::cout << "Evaluate accuracy over test data" << std::endl;
+    //nn.evaluate(csvTestData, testLabels);
 
     return 0;
 }

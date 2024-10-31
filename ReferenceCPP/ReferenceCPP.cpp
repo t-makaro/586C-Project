@@ -3,14 +3,14 @@
 
 int main() {
     //Util 0: Read Train Data
-    /*vector<int> trainLabels;
+    vector<int> trainLabels;
     trainLabels.reserve(60000);
     std::cout << "Reading train data..." << std::endl;
     auto csvTrainData = utility::ReadDatasetCSV("../data/train.csv", trainLabels);
     std::cout << "done." << std::endl;
     std::cout << "Training data size: " << csvTrainData.size() << "x"
         << csvTrainData[0].size() << std::endl;
-    std::cout << "Training labels size: " << trainLabels.size() << std::endl;*/
+    std::cout << "Training labels size: " << trainLabels.size() << std::endl;
 
     // Util 1: Read Test Data
     vector<int> testLabels;
@@ -23,12 +23,12 @@ int main() {
 
     // Util 2: Read Weights and Biases
     std::cout << "Reading in weights..." << std::endl;
-    auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");
-    auto weights_a1 = utility::ReadWeight("../data/weights_a1.csv");
-    auto biases_a2 = utility::ReadBias("../data/biases_a2.csv");
-    auto weights_a2 = utility::ReadWeight("../data/weights_a2.csv");
-    auto biases_o = utility::ReadBias("../data/biases_o.csv");
-    auto weights_o = utility::ReadWeight("../data/weights_o.csv");
+    auto biases_a1 = utility::ReadBias("../data/biases_a1_init.csv");
+    auto weights_a1 = utility::ReadWeight("../data/weights_a1_init.csv");
+    auto biases_a2 = utility::ReadBias("../data/biases_a2_init.csv");
+    auto weights_a2 = utility::ReadWeight("../data/weights_a2_init.csv");
+    auto biases_o = utility::ReadBias("../data/biases_o_init.csv");
+    auto weights_o = utility::ReadWeight("../data/weights_o_init.csv");
 
     // NN 0: Init Neural Network
     std::cout << "Initializing NN..." << std::endl;
@@ -47,14 +47,14 @@ int main() {
 
     // NN 3: Train on the training set
 
-    nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], testLabels[0]);
+    //nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], testLabels[0]);
 
-    //std::cout << "Starting training..." << std::endl;
-    //nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
+    std::cout << "Starting training..." << std::endl;
+    nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
 
     // NN 4: Forward Pass Test Set
-    //std::cout << "Evaluate accuracy over test data" << std::endl;
-    //nn.evaluate(csvTestData, testLabels);
+    std::cout << "Evaluate accuracy over test data" << std::endl;
+    nn.evaluate(csvTestData, testLabels);
 
     return 0;
 }

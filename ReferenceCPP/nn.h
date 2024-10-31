@@ -41,7 +41,7 @@ public:
     Matrix& add(const Matrix& x, const Matrix& b, Matrix& result, const float scale);
     Vector& add(const Vector& x, const Vector& b, Vector& result, const float scale);
     static Vector& sigmoid(Vector& x);
-    static Vector& d_sigmoid(Vector& x);
+    static Vector& d_sigmoid(const Vector& x, Vector& y);
     Vector& sigmoid(const Vector& x, Vector& result);
     static Vector& forwardLayer(const Matrix& w, const Vector& b, const Vector& a,
         Vector& result);

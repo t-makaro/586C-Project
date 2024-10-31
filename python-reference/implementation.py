@@ -91,7 +91,10 @@ class NeuralNet:
         d_weights[-1] = (activations[-2][:,np.newaxis]*d_biases[-1]).T
         
         for l in range(2, self.num_layers):
-            delta = self.weights[-l+1].T @ ((self.dσ(zs[-l+1])*delta))
+            dsig = self.dσ(zs[-l+1])
+            w_transpose = self.weights[-l+1].T
+            mul_elementwise = (dsig*delta)
+            delta = w_transpose @ mul_elementwise
             d_biases[-l] = self.dσ(zs[-l])*delta
             d_weights[-l] = (activations[-l-1][:,np.newaxis]*d_biases[-l]).T
         return d_weights, d_biases

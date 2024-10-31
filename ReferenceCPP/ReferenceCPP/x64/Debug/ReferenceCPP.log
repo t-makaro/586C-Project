@@ -1,3 +1,0 @@
-﻿  ReferenceCPP.cpp
-C:\Work_shin\586C-Project\ReferenceCPP\ReferenceCPP.cpp(53,48): warning C4305: 'argument': truncation from 'double' to 'float'
-  ReferenceCPP.vcxproj -> C:\Work_shin\586C-Project\ReferenceCPP\x64\Debug\ReferenceCPP.exe

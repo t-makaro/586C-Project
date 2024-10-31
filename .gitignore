@@ -58,3 +58,11 @@ CUDA586/x64/
 ReferenceCPP/ReferenceCPP/x64/
 ReferenceCPP/x64/
 
+# LaTeX files
+report/*.aux
+report/*.log
+report/*.log
+report/*.out
+report/*.xml
+report/*.synctex.gz
+report/main-blx.bib

@@ -63,9 +63,9 @@ void NN::updateFromBatch(const Matrix batch, const std::vector<int> labels, cons
 
   for (int i = 0; i < length; i++){
     backwards(dWeights, dBiases, batch[i], labels[i]);
-    for (int i=0; i<weights.size(); i++){
-      add(weights[i], dWeights[i], weights[i], -learningRate/length);
-      add(biases[i], dBiases[i], biases[i], -learningRate/length);
+    for (int j=0; j<weights.size(); j++){
+      add(weights[j], dWeights[j], weights[j], -learningRate/length);
+      add(biases[j], dBiases[j], biases[j], -learningRate/length);
     }
   }
 }
@@ -99,9 +99,9 @@ void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dB
 void NN::cost_derivative(const Vector &last_activation, const int label, Vector &result){
   for (int i=0; i < 10; i++){
       if (i == label){
-        result[i] = -1.0f/last_activation[i];
+        result[i] = -1.0f/(last_activation[i]+FLT_EPSILON);
       } else {
-        result[i] = 1.0f/(1.0f-last_activation[i]);
+        result[i] = 1.0f/(1.0f-last_activation[i]+FLT_EPSILON);
       }
   }
   return;

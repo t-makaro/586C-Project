@@ -25,7 +25,7 @@ class NeuralNet:
 #         return 2*(activation-(np.eye(self.layers[-1])[ans]))
     def cost_derivative(self, ans, activation):
         y = np.eye(self.layers[-1])[ans]
-        return (activation-y)/activation/(1-activation)
+        return (activation-y)/(activation + 1e-15)/(1-activation+1e-15)
     
     def propagate_forward(self, vector):
         """Return the output of the neutral net of vector is the input"""

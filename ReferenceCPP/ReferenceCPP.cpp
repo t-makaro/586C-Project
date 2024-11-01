@@ -47,7 +47,7 @@ int main() {
 
     // NN 3: Train on the training set
 
-    //nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], testLabels[0]);
+    nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], testLabels[0]);
 
     std::cout << "Starting training..." << std::endl;
     nn.train(csvTrainData, trainLabels, 1, 10, 0.1);

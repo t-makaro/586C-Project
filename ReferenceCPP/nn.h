@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
+#include <cmath>
 
 typedef std::vector<float> Vector;
 typedef std::vector<Vector> Matrix;

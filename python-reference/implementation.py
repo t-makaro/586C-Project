@@ -86,17 +86,14 @@ class NeuralNet:
             activations.append(activation)
         
         # Propagate backwards
-        delta = self.cost_derivative(answer, activations[-1])
-        d_biases[-1] = self.dσ(zs[-1])*delta
-        d_weights[-1] = (activations[-2][:,np.newaxis]*d_biases[-1]).T
-        
-        for l in range(2, self.num_layers):
-            dsig = self.dσ(zs[-l+1])
-            w_transpose = self.weights[-l+1].T
-            mul_elementwise = (dsig*delta)
-            delta = w_transpose @ mul_elementwise
+        for l in range(1, self.num_layers):
+            if l == 1:
+                delta = self.cost_derivative(answer, activations[-1])
+            else:
+                delta = self.weights[-l+1].T @ ((self.dσ(zs[-l+1])*delta))
             d_biases[-l] = self.dσ(zs[-l])*delta
             d_weights[-l] = (activations[-l-1][:,np.newaxis]*d_biases[-l]).T
+
         return d_weights, d_biases
     
     def evaluate(self, test_data):

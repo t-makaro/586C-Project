@@ -266,3 +266,64 @@ std::vector<float>& cu_utility::cuForwardLayer(
 
     return result;
 }
+
+std::vector<std::vector<float>>& cu_utility::cuForward(
+	const std::vector<float*> d_weights, const std::vector<float*> d_biases,
+	const std::vector<float*> d_activations, const std::vector<int> layers,
+	const std::vector<std::vector<float>>& X, std::vector<std::vector<float>>& result
+	) {
+    // flatten X
+	int M = X.size();
+	int N = X[0].size();
+	size_t sizeX = M * N * sizeof(float);
+	std::vector<float> X_flattened(M * N);
+
+	for (int i = 0; i < M; i++) {
+		std::copy(X[i].begin(), X[i].end(), X_flattened.begin() + i * N);
+	}
+
+	// copy to device
+    float* d_X;
+	cudaMalloc(&d_X, sizeX);
+	cudaMemcpy(d_X, X_flattened.data(), sizeX, cudaMemcpyHostToDevice);
+
+    // alloc memory for predictions
+	float* d_predictions;
+	cudaMalloc(&d_predictions, result.size() * result[0].size() * sizeof(float));
+
+    // loop over examples in X
+	int threadsPerBlock = 256;
+	int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    for (int i = 0; i < M; i++) {
+		float* d_x = d_X + i * N;
+		global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_weights[0], d_biases[0], d_x, d_activations[0], layers[1], layers[0]);
+        for (int layer = 1; layer < layers.size(); layer++) {
+            // Launch the kernel
+            if (layer == layers.size() - 1) {
+                // use predictions pointer
+				global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_weights[layer - 1], d_biases[layer - 1], d_activations[layer - 1], d_predictions + i * result[0].size(), layers[layer], layers[layer - 1]);
+            }
+            else {
+			    global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_weights[layer - 1], d_biases[layer - 1], d_activations[layer - 1], d_activations[layer], layers[layer], layers[layer - 1]);
+            }
+        }   
+    }
+
+    // Copy result from device to host
+    // predictionts flattened
+	size_t sizePred = M * layers[layers.size() - 1] * sizeof(float);
+	std::vector<float> predictions_flattened(M * layers[layers.size() - 1]);
+	cudaMemcpy(predictions_flattened.data(), d_predictions, sizePred, cudaMemcpyDeviceToHost);
+
+	// unflatten predictions
+	for (int i = 0; i < M; i++) {
+		std::copy(predictions_flattened.begin() + i * layers[layers.size() - 1], predictions_flattened.begin() + (i + 1) * layers[layers.size() - 1], result[i].begin());
+	}
+
+	cudaFree(d_X);
+	cudaFree(d_predictions);
+
+	return result;
+}
+

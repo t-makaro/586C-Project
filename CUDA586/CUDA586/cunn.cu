@@ -4,18 +4,61 @@ CUNN::CUNN(std::vector<int> layers) : layers(layers) {
     numLayers = layers.size();
     weights.reserve(numLayers - 1);
     biases.reserve(numLayers - 1);
-
     activations.reserve(numLayers);
-    for (int i = 0; i < numLayers; i++) {
-        activations.push_back(Vector(layers[i], 0.0));
-        if (i < numLayers - 1) {
-            dWeights.push_back(Matrix(layers[i], Vector(layers[i + 1], 0.0)));
-            dBiases.push_back(Vector(layers[i + 1], 0.0));
-        }
-    }
+
+    /*d_weights.reserve(numLayers - 1);
+    d_biases.reserve(numLayers - 1);
+    d_activations.reserve(numLayers);
+
+    */
+
+    // initialize device pointer vecotrs
+	d_weights.resize(numLayers - 1);
+	d_biases.resize(numLayers - 1);
+	d_activations.resize(numLayers);
 }
 
 CUNN::~CUNN() {}
+
+// alloc device weights, biases, activations
+void CUNN::deviceAlloc() {
+    size_t sizeA0 = layers[0] * sizeof(float); // input vector
+    cudaMalloc(&d_activations[0], sizeA0);
+
+    for (int i = 1; i < numLayers; i++) {
+        int M = layers[i-1];
+        int N = layers[i];
+        
+        size_t sizeWi = M * N * sizeof(float);
+        size_t sizeAi = N * sizeof(float);
+        size_t sizeBi = N * sizeof(float);
+
+		cudaMalloc(&d_weights[i - 1], sizeWi);
+		cudaMalloc(&d_biases[i - 1], sizeBi);
+		cudaMalloc(&d_activations[i], sizeAi);
+    }
+}
+
+void CUNN::copyParametersToDevice() {
+    deviceAlloc();
+
+    for (int i = 0; i < weights.size(); i++) {
+        int M = weights[i].size();
+        int N = weights[i][0].size();
+        assert(M == biases[i].size());
+
+        size_t sizeWi = M * N * sizeof(float);
+        std::vector<float> Wi_flattened(M * N);
+        for (int j = 0; j < M; j++) {
+            std::copy(weights[i][j].begin(), weights[i][j].end(), Wi_flattened.begin() + j * N);
+        }
+
+        cudaMemcpy(d_weights[i], Wi_flattened.data(), sizeWi, cudaMemcpyHostToDevice);
+
+        size_t sizeBi = M * sizeof(float);
+        cudaMemcpy(d_biases[i], biases[i].data(), sizeBi, cudaMemcpyHostToDevice);
+    }
+}
 
 void CUNN::copyWeights(const std::vector<Matrix> weights) {
     assert(weights.size() == numLayers - 1);
@@ -48,6 +91,12 @@ Vector& CUNN::forward(const Vector& x, Vector& result) {
     }
     result = activations[numLayers - 1];
     return result;
+}
+
+Vector& CUNN::forwardLayer(const Matrix& w, const Vector& b, const Vector& a,
+    Vector& result) {
+    // return sigmoid(add(multiply(w, a, result), b, result));
+    return cu_utility::cuForwardLayer(w, b, a, result);
 }
 
 void CUNN::train(const Matrix trainingData, const Vector trainingLabels,
@@ -155,16 +204,36 @@ float CUNN::evaluate(const Matrix& testData,
     // timing
     auto start = std::chrono::high_resolution_clock::now();
 
-    Vector result(10, 0);
-    for (int i = 0; i < testData.size(); i++) {
-        Vector input = testData[i];
-        Vector output = forward(input, result);
+    //Vector result(10, 0);
+    //for (int i = 0; i < testData.size(); i++) {
+    //    Vector input = testData[i];
+    //    Vector output = forward(input, result);
 
+    //    int maxIndex = 0;
+    //    float maxVal = 0;
+    //    for (int j = 0; j < output.size(); j++) {
+    //        if (output[j] > maxVal) {
+    //            maxVal = output[j];
+    //            maxIndex = j;
+    //        }
+    //    }
+    //    if (maxIndex == testLabels[i]) {
+    //        numCorrect++;
+    //    }
+    //}
+
+    // should be testLabels.size() x 10
+    // reserve memory for predictions
+	Matrix predictions(testLabels.size(), Vector(10, 0));
+	cu_utility::cuForward(d_weights, d_biases, d_activations, layers, testData, predictions);
+
+    for (int i = 0; i < predictions.size(); i++) {
+        Vector pred = predictions[i];
         int maxIndex = 0;
         float maxVal = 0;
-        for (int j = 0; j < output.size(); j++) {
-            if (output[j] > maxVal) {
-                maxVal = output[j];
+        for (int j = 0; j < pred.size(); j++) {
+            if (pred[j] > maxVal) {
+                maxVal = pred[j];
                 maxIndex = j;
             }
         }
@@ -182,12 +251,6 @@ float CUNN::evaluate(const Matrix& testData,
     float accuracy = (float)numCorrect / testData.size();
     std::cout << "Train Accuracy: " << accuracy << std::endl;
     return accuracy;
-}
-
-Vector& CUNN::forwardLayer(const Matrix& w, const Vector& b, const Vector& a,
-    Vector& result) {
-    // return sigmoid(add(multiply(w, a, result), b, result));
-    return cu_utility::cuForwardLayer(w, b, a, result);
 }
 
 Vector& CUNN::forwardZ(const Matrix& w, const Vector& b, const Vector& a,

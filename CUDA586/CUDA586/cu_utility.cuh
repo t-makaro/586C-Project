@@ -22,4 +22,10 @@ public:
 	static std::vector<float>& cuForwardLayer(
 		const std::vector<std::vector<float>>& W, const std::vector<float>& b,
 		const std::vector<float>& x, std::vector<float>& result);
+
+	static std::vector<std::vector<float>>& cuForward(
+		const std::vector<float*> d_weights, const std::vector<float*> d_biases,
+		const std::vector<float*> d_activations, const std::vector<int> layers,
+		const std::vector<std::vector<float>>& X, std::vector<std::vector<float>>& result
+	);
 };

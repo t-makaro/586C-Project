@@ -13,6 +13,7 @@ public:
     CUNN(std::vector<int> layers);
     ~CUNN();
     Vector& forward(const Vector& x, Vector& result);
+
     void train(const Matrix trainingData, const Vector trainingLabels,
         const int iterations, const int batchSize, float learningRate);
     float evaluate(const Matrix& testData, const std::vector<int>& testLabels);
@@ -22,6 +23,8 @@ public:
 
     static float sigmoid(float x);
     static float d_sigmoid(float x);
+
+    void copyParametersToDevice();
 
 protected:
     int numLayers;
@@ -37,6 +40,14 @@ protected:
 
     void updateFromBatch(const Matrix batch, const Vector labels,
         const float learningRate);
+
+    // device pointers
+    std::vector<float *> d_weights;
+    std::vector<float *> d_biases;
+    std::vector<float *> d_activations;
+;
+    void deviceAlloc();
+
 
 private:
     static Vector& multiply(const Matrix& w, const Vector& x, Vector& result);

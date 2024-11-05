@@ -96,6 +96,7 @@ int main() {
     nn.copyBiases({ biases_a1, biases_a2, biases_o });
 
     // NN 2: Forward Pass Training Set
+    nn.copyParametersToDevice();
 
 	std::cout << "Evaluating on training set" << std::endl;
     nn.evaluate(csvTrainData, trainLabels);

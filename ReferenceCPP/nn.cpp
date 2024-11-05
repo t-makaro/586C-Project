@@ -58,15 +58,31 @@ void NN::train(const Matrix trainingData, const std::vector<int> trainingLabels,
 }
 
 void NN::updateFromBatch(const Matrix batch, const std::vector<int> labels, const float learningRate) {
-  int length = labels.size();
-  assert(length == batch.size());
+  int batchSize = labels.size();
+  assert(batchSize == batch.size());
 
-  for (int i = 0; i < length; i++){
+  std::vector<Matrix> ddWeights;
+  std::vector<Vector> ddBiases;
+
+  for (int i = 0; i < numLayers-1; i++) {
+      if (i < numLayers - 1) {
+          ddWeights.push_back(Matrix(layers[i + 1], Vector(layers[i], 0.0)));
+          ddBiases.push_back(Vector(layers[i + 1], 0.0));
+      }
+  }
+
+  // calculate individual gradiants and average them together
+  for (int i = 0; i < batchSize; i++){
     backwards(dWeights, dBiases, batch[i], labels[i]);
     for (int j=0; j<weights.size(); j++){
-      add(weights[j], dWeights[j], weights[j], -learningRate/length);
-      add(biases[j], dBiases[j], biases[j], -learningRate/length);
+      add(ddWeights[j], dWeights[j], ddWeights[j], 1.0 / batchSize);
+      add(ddBiases[j], dBiases[j], ddBiases[j], 1.0 / batchSize);
     }
+  }
+  // update the weights and biases with gradient computed above at the learning rate
+  for (int j = 0; j < weights.size(); j++) {
+      add(weights[j], ddWeights[j], weights[j], -learningRate);
+      add(biases[j], ddBiases[j], biases[j], -learningRate);
   }
 }
 

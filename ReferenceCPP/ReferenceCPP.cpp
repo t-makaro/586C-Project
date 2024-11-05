@@ -47,10 +47,13 @@ int main() {
 
     // NN 3: Train on the training set
 
-    nn.backwards(nn.dWeights, nn.dBiases, csvTestData[0], testLabels[0]);
-
     std::cout << "Starting training..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
     nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
 
     // NN 4: Forward Pass Test Set
     std::cout << "Evaluate accuracy over test data" << std::endl;

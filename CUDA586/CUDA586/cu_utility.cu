@@ -295,10 +295,12 @@ std::vector<std::vector<float>>& cu_utility::cuForward(
 	int threadsPerBlock = 256;
 	int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
 
+	cudaDeviceSynchronize();
     for (int i = 0; i < M; i++) {
 		float* d_x = d_X + i * N;
-		global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_weights[0], d_biases[0], d_x, d_activations[0], layers[1], layers[0]);
-        for (int layer = 1; layer < layers.size(); layer++) {
+		global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_weights[0], d_biases[0], d_x, d_activations[1], layers[1], layers[0]);
+        cudaDeviceSynchronize();
+        for (int layer = 2; layer < layers.size(); layer++) {
             // Launch the kernel
             if (layer == layers.size() - 1) {
                 // use predictions pointer
@@ -307,6 +309,7 @@ std::vector<std::vector<float>>& cu_utility::cuForward(
             else {
 			    global_forwardLayer << <blocksPerGrid, threadsPerBlock >> > (d_weights[layer - 1], d_biases[layer - 1], d_activations[layer - 1], d_activations[layer], layers[layer], layers[layer - 1]);
             }
+            cudaDeviceSynchronize();
         }   
     }
 

@@ -1,5 +1,8 @@
 #include "cu_utility.cuh"
 
+typedef std::vector<float> Vector;
+typedef std::vector<Vector> Matrix;
+
 // Device Kernels
 
 __device__ void vectorAdd(const float* A, const float* B, float* C, int N) {
@@ -39,6 +42,26 @@ __device__ void d_sigmoid(float* A, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
         A[i] = d_sigmoid(A[i]);
+    }
+}
+
+__device__ void outer_product(float* A, float* B, int M, int N, float* result) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < M * N) { //M*N = 784*300 = 235,200. That seems like a bad idea.
+        int row = i / N;
+        int col = i % N;
+        result[i] = A[row] * B[col];
+    }
+}
+
+__device__ void transpose(const float* input, float* output, int M, int N) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < M * N) {
+        int row = i / N;
+        int col = i % M;
+
+        output[col * M + row] = input[i];
     }
 }
 
@@ -265,6 +288,25 @@ std::vector<float>& cu_utility::cuForwardLayer(
     cudaFree(d_y);
 
     return result;
+}
+
+float* copyDataToDevice(Matrix& X) {
+    // flatten X
+    int M = X.size();
+    int N = X[0].size();
+    size_t sizeX = M * N * sizeof(float);
+    std::vector<float> X_flattened(M * N);
+
+    for (int i = 0; i < M; i++) {
+        std::copy(X[i].begin(), X[i].end(), X_flattened.begin() + i * N);
+    }
+
+    // copy to device
+    float* d_X;
+    cudaMalloc(&d_X, sizeX);
+    cudaMemcpy(d_X, X_flattened.data(), sizeX, cudaMemcpyHostToDevice);
+
+    return d_X;
 }
 
 std::vector<std::vector<float>>& cu_utility::cuForward(

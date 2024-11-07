@@ -305,6 +305,15 @@ float* cu_utility::copyDataToDevice(Matrix& X) {
 
     return d_X;
 }
+float* cu_utility::copyDataToDevice(std::vector<int>& X) {
+    // copy to device
+    float* d_X;
+    size_t sizeX = X.size() * sizeof(int);
+    cudaMalloc(&d_X, sizeX);
+    cudaMemcpy(d_X, X.data(), sizeX, cudaMemcpyHostToDevice);
+
+    return d_X;
+}
 
 std::vector<std::vector<float>>& cu_utility::cuForward(
 	const std::vector<float*> d_weights, const std::vector<float*> d_biases,

@@ -91,13 +91,31 @@ int main() {
     //}
     //std::cout << "All values are correct!\n";
 
-    // NN 1: Copy Weights and Biases
+    // NN 1: Copy Weights and Biases and Data
+    std::cout << "Copying Parameters and Data to the GPU" << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+
     nn.copyWeights({ weights_a1, weights_a2, weights_o });
     nn.copyBiases({ biases_a1, biases_a2, biases_o });
 
-    // NN 2: Forward Pass Training Set
     nn.copyParametersToDevice();
 
+    float* d_trainData = cu_utility::copyDataToDevice(csvTrainData);
+    float* d_trainLabels = cu_utility::copyDataToDevice(trainLabels);
+
+    float* d_testData = cu_utility::copyDataToDevice(csvTrainData);
+    float* d_testLabels = cu_utility::copyDataToDevice(testLabels);
+
+    int M_train = csvTrainData.size(); // num images
+    int M_test = csvTestData.size(); // num images
+    int N = csvTrainData[0].size(); // num pixels
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "done." << std::endl;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
+
+    // NN 2: Forward Pass Training Set
 	std::cout << "Evaluating on training set" << std::endl;
     nn.evaluate(csvTrainData, trainLabels);
 

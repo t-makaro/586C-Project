@@ -32,4 +32,5 @@ public:
 		const std::vector<std::vector<float>>& X, std::vector<std::vector<float>>& result
 	);
 	static float* copyDataToDevice(Matrix& X);
+	static float* copyDataToDevice(std::vector<int>& X);
 };

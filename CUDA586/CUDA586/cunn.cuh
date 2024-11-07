@@ -14,8 +14,8 @@ public:
     ~CUNN();
     Vector& forward(const Vector& x, Vector& result);
 
-    void train(const Matrix trainingData, const Vector trainingLabels,
-        const int iterations, const int batchSize, float learningRate);
+    void train(const float* d_trainingData, const float* d_trainingLabels, const int M, const int N,
+        const int iterations, const int batchSize, const float learningRate);
     float evaluate(const Matrix& testData, const std::vector<int>& testLabels);
 
     void copyWeights(const std::vector<Matrix> weights);

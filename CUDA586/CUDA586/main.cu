@@ -101,10 +101,10 @@ int main() {
     nn.copyParametersToDevice();
 
     float* d_trainData = cu_utility::copyDataToDevice(csvTrainData);
-    float* d_trainLabels = cu_utility::copyDataToDevice(trainLabels);
+    int* d_trainLabels = cu_utility::copyDataToDevice(trainLabels);
 
     float* d_testData = cu_utility::copyDataToDevice(csvTrainData);
-    float* d_testLabels = cu_utility::copyDataToDevice(testLabels);
+    int* d_testLabels = cu_utility::copyDataToDevice(testLabels);
 
     int M_train = csvTrainData.size(); // num images
     int M_test = csvTestData.size(); // num images

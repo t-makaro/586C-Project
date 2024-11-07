@@ -99,10 +99,14 @@ Vector& CUNN::forwardLayer(const Matrix& w, const Vector& b, const Vector& a,
     return cu_utility::cuForwardLayer(w, b, a, result);
 }
 
-void CUNN::train(const Matrix trainingData, const Vector trainingLabels,
-    const int iterations, const int batchSize,
+void CUNN::train(const float* d_trainingData, const float* d_trainingLabels, 
+    const int M, const int N, const int iterations, const int batchSize,
     float learningRate) {
-    // TODO
+    for (int j = 0; j < iterations; j++) {
+        for (int i = 0; i < M; i += batchSize) {
+            //updateFromBatch(d_trainingData+i*M, d_trainingLabels+i, learningRate);
+        }
+    }
 }
 
 void CUNN::updateFromBatch(const Matrix batch, const Vector labels,

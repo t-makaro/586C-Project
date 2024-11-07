@@ -305,9 +305,9 @@ float* cu_utility::copyDataToDevice(Matrix& X) {
 
     return d_X;
 }
-float* cu_utility::copyDataToDevice(std::vector<int>& X) {
+int* cu_utility::copyDataToDevice(std::vector<int>& X) {
     // copy to device
-    float* d_X;
+    int* d_X;
     size_t sizeX = X.size() * sizeof(int);
     cudaMalloc(&d_X, sizeX);
     cudaMemcpy(d_X, X.data(), sizeX, cudaMemcpyHostToDevice);

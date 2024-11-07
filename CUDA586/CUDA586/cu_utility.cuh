@@ -4,6 +4,9 @@
 #include <iostream>
 #include <vector>
 
+typedef std::vector<float> Vector;
+typedef std::vector<Vector> Matrix;
+
 // APIs
 class cu_utility {
 private:
@@ -28,4 +31,5 @@ public:
 		const std::vector<float*> d_activations, const std::vector<int> layers,
 		const std::vector<std::vector<float>>& X, std::vector<std::vector<float>>& result
 	);
+	static float* copyDataToDevice(Matrix& X);
 };

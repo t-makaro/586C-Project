@@ -1,8 +1,5 @@
 #include "cu_utility.cuh"
 
-typedef std::vector<float> Vector;
-typedef std::vector<Vector> Matrix;
-
 // Device Kernels
 
 __device__ void vectorAdd(const float* A, const float* B, float* C, int N) {
@@ -290,7 +287,7 @@ std::vector<float>& cu_utility::cuForwardLayer(
     return result;
 }
 
-float* copyDataToDevice(Matrix& X) {
+float* cu_utility::copyDataToDevice(Matrix& X) {
     // flatten X
     int M = X.size();
     int N = X[0].size();

@@ -123,6 +123,12 @@ int main() {
     std::cout << "Evaluating on test set" << std::endl;
     nn.evaluate(csvTestData, testLabels);
 
+    // Free thhe GPU memory
+    cudaFree(d_trainData);
+    cudaFree(d_trainLabels);
+    cudaFree(d_testData);
+    cudaFree(d_testLabels);
+
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
     cudaError_t cudaStatus = cudaDeviceReset();

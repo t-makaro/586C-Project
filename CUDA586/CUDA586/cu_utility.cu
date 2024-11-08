@@ -42,7 +42,7 @@ __device__ void d_sigmoid(float* A, int N) {
     }
 }
 
-__device__ void outer_product(float* A, float* B, int M, int N, float* result) {
+__device__ void outer_product(const float* A, const float* B, int M, int N, float* result) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < M * N) { //M*N = 784*300 = 235,200. That seems like a bad idea.
         int row = i / N;
@@ -106,6 +106,12 @@ __global__ void global_forwardLayer(const float* W, const float* b,
     vectorAdd(result, b, result, N);
     // activate
     sigmoid(result, M);
+}
+
+__global__ void global_test_kernel_matTran_outerProduct(const float* A, const float* B, int M, int N, float* resOuterProduct, float* resTranspose)
+{
+    outer_product(A, B, M, N, resOuterProduct);
+    transpose(resOuterProduct, resTranspose, M, N);
 }
 
 cu_utility::cu_utility(/* args */) {}
@@ -314,6 +320,57 @@ int* cu_utility::copyDataToDevice(std::vector<int>& X) {
 
     return d_X;
 }
+
+void cu_utility::testOuterProductAndTranspose(const std::vector<float>& a, const std::vector<float>& b,
+	std::vector<float>& outer, std::vector<float>& transp)
+{
+
+    size_t matrix_len = a.size() * b.size();
+    float* d_outer;
+    float* d_transpose;
+    float* d_a;
+    float* d_b;
+    cudaMalloc(&d_outer, matrix_len * sizeof(float));
+    cudaMalloc(&d_transpose, matrix_len * sizeof(float));
+    cudaMalloc(&d_a, a.size() * sizeof(float));
+    cudaMalloc(&d_b, b.size() * sizeof(float));
+
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (b.size() + threadsPerBlock - 1) / threadsPerBlock;
+    cudaMemcpy(d_a, a.data(), a.size() * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_b, b.data(), b.size() * sizeof(float), cudaMemcpyHostToDevice);
+    // Desired Output
+    // Outer Product: 4 5 6 7 / 8 10 12 14 / 12 15 18 21
+    // Transpose: 4 8 12 / 5 10 15 / 6 12 18 / 7 14 21
+    global_test_kernel_matTran_outerProduct << <blocksPerGrid, threadsPerBlock >> >(d_a, d_b, a.size(), b.size(), d_outer, d_transpose);
+
+    outer.resize(matrix_len);
+    transp.resize(matrix_len);
+
+    cudaDeviceSynchronize();
+    cudaMemcpy(outer.data(), d_outer, matrix_len * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(transp.data(), d_transpose, matrix_len * sizeof(float), cudaMemcpyDeviceToHost);
+
+    
+    cudaFree(d_outer);
+    cudaFree(d_transpose);
+    cudaFree(d_a);
+    cudaFree(d_b);
+}
+
+void cu_utility::printVector(const std::vector<float>& v, const int& rowLength)
+{
+    for(int i = 0; i < v.size(); i++)
+    {
+	    if(rowLength > 0 && i % rowLength == 0)
+	    {
+            std::cout << '\n';
+	    }
+        std::cout << v[i] << " ";
+    }
+    std::cout << "\n";
+}
+
 
 std::vector<std::vector<float>>& cu_utility::cuForward(
 	const std::vector<float*> d_weights, const std::vector<float*> d_biases,

@@ -14,6 +14,7 @@ private:
 public:
 	cu_utility(/* args */);
 	~cu_utility();
+	static void d_VectorAdd(float* A, float* B, float* result, float N, float scale);
 	static std::vector<float>& cuVectorAdd(const std::vector<float>& x,
 		const std::vector<float>& b,
 		std::vector<float>& result);

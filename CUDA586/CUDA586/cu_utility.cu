@@ -70,6 +70,13 @@ __global__ void global_vectorAdd(const float* A, const float* B, float* C,
         C[i] = A[i] + B[i];
     }
 }
+__global__ void global_vectorAdd(const float* A, const float* B, float* C,
+    int N, float scale) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < N) {
+        C[i] = A[i] + scale*B[i];
+    }
+}
 
 __global__ void global_matMulVec(const float* W, const float* X, float* Y,
     int M, int N) {
@@ -117,6 +124,13 @@ __global__ void global_test_kernel_matTran_outerProduct(const float* A, const fl
 cu_utility::cu_utility(/* args */) {}
 
 cu_utility::~cu_utility() {}
+
+void cu_utility::d_VectorAdd(float* A, float* B, float* result, float N, float scale) {
+    // Launch the kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+    global_vectorAdd << <blocksPerGrid, threadsPerBlock >> > (A, B, result, N, scale);
+}
 
 std::vector<float>& cu_utility::cuVectorAdd(const std::vector<float>& x,
     const std::vector<float>& b,

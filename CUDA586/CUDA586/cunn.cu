@@ -99,26 +99,49 @@ Vector& CUNN::forwardLayer(const Matrix& w, const Vector& b, const Vector& a,
     return cu_utility::cuForwardLayer(w, b, a, result);
 }
 
-void CUNN::train(const float* d_trainingData, const float* d_trainingLabels, 
+void CUNN::train(const float* d_trainingData, const int* d_trainingLabels, 
     const int M, const int N, const int iterations, const int batchSize,
     float learningRate) {
     for (int j = 0; j < iterations; j++) {
         for (int i = 0; i < M; i += batchSize) {
-            //updateFromBatch(d_trainingData+i*M, d_trainingLabels+i, learningRate);
+            updateFromBatch(d_trainingData+i*M, d_trainingLabels+i, batchSize, N, learningRate);
         }
     }
 }
 
-void CUNN::updateFromBatch(const Matrix batch, const Vector labels,
-    const float learningRate) {
-    int length = labels.size();
-    assert(length == batch.size());
+void CUNN::updateFromBatch(const float* batch, const int* labels, 
+    const int batchSize, const int N, const float learningRate) {
 
-    for (int i = 0; i < length; i++) {
-        backwards(dWeights, dBiases, batch[i], labels[i]);
+    std::vector<float*> d_ddWeights;
+    std::vector<float*> d_ddBiases;
+
+    // Allocate zeros to accumulate the gradiant over the batch.
+    for (int i = 0; i < numLayers - 1; i++) {
+        // Allocate memory on the GPU for change in weights and biases
+        float* temp_weights;
+        float* temp_biases;
+
+        size_t weightSize = layers[i + 1] * layers[i] * sizeof(float);
+        size_t biasSize = layers[i + 1] * sizeof(float);
+
+        // Allocate GPU memory
+        cudaMalloc(&temp_weights, weightSize);
+        cudaMalloc(&temp_biases, biasSize);
+
+        // Initialize the allocated memory to 0.0 (optional, but often needed)
+        cudaMemset(temp_weights, 0.0, weightSize);
+        cudaMemset(temp_biases, 0.0, biasSize);
+
+        // Store pointers in vectors
+        d_ddWeights.push_back(temp_weights);
+        d_ddBiases.push_back(temp_biases);
+    }
+
+    for (int i = 0; i < batchSize; i++) {
+        //backwards(dWeights, dBiases, batch[i], labels[i]);
         for (int i = 0; i < weights.size(); i++) {
-            add(weights[i], dWeights[i], weights[i], learningRate / length);
-            add(biases[i], dBiases[i], biases[i], learningRate / length);
+            //add(weights[i], dWeights[i], weights[i], learningRate / batchSize);
+            //add(biases[i], dBiases[i], biases[i], learningRate / batchSize);
         }
     }
 }

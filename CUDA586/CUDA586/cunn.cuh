@@ -14,7 +14,7 @@ public:
     ~CUNN();
     Vector& forward(const Vector& x, Vector& result);
 
-    void train(const float* d_trainingData, const float* d_trainingLabels, const int M, const int N,
+    void train(const float* d_trainingData, const int* d_trainingLabels, const int M, const int N,
         const int iterations, const int batchSize, const float learningRate);
     float evaluate(const Matrix& testData, const std::vector<int>& testLabels);
 
@@ -38,8 +38,8 @@ protected:
     std::vector<Matrix> dWeights;
     std::vector<Vector> dBiases;
 
-    void updateFromBatch(const Matrix batch, const Vector labels,
-        const float learningRate);
+    void updateFromBatch(const float* batch, const int* labels,
+        const int batchSize, const int N, const float learningRate);
 
     // device pointers
     std::vector<float *> d_weights;

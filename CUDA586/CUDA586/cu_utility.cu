@@ -55,8 +55,8 @@ __device__ void transpose(const float* input, float* output, int M, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i < M * N) {
-        int row = i / N;
-        int col = i % M;
+        int row = i / N; // Original Alignment: 
+        int col = i % N;
 
         output[col * M + row] = input[i];
     }
@@ -111,7 +111,7 @@ __global__ void global_forwardLayer(const float* W, const float* b,
 __global__ void global_test_kernel_matTran_outerProduct(const float* A, const float* B, int M, int N, float* resOuterProduct, float* resTranspose)
 {
     outer_product(A, B, M, N, resOuterProduct);
-    transpose(resOuterProduct, resTranspose, M, N);
+    transpose(resOuterProduct, resTranspose, M, N); // Rearrange the input to N * M
 }
 
 cu_utility::cu_utility(/* args */) {}

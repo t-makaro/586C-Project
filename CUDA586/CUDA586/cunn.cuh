@@ -38,7 +38,7 @@ protected:
     std::vector<Matrix> dWeights;
     std::vector<Vector> dBiases;
 
-    void updateFromBatch(const float* batch, const int* labels,
+    void updateFromBatch(const float* d_batch, const int* d_labels,
         const int batchSize, const int N, const float learningRate);
 
     // device pointers
@@ -75,4 +75,7 @@ private:
         Vector& result);
     Matrix& outer_product(const Vector& a, const Vector& b, Matrix& result);
     void transpose(const Matrix& a, Matrix& result);
+
+    std::vector<float*> allocate_like_weights();
+    std::vector<float*> allocate_like_biases();
 };

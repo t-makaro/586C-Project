@@ -104,46 +104,85 @@ void CUNN::train(const float* d_trainingData, const int* d_trainingLabels,
     float learningRate) {
     for (int j = 0; j < iterations; j++) {
         for (int i = 0; i < M; i += batchSize) {
-            updateFromBatch(d_trainingData+i*M, d_trainingLabels+i, batchSize, N, learningRate);
+            updateFromBatch(d_trainingData+i*N, d_trainingLabels+i, batchSize, N, learningRate);
         }
     }
 }
 
-void CUNN::updateFromBatch(const float* batch, const int* labels, 
-    const int batchSize, const int N, const float learningRate) {
+std::vector<float*> CUNN::allocate_like_weights() {
+    std::vector<float*> d_Weights;
 
-    std::vector<float*> d_ddWeights;
-    std::vector<float*> d_ddBiases;
+    // Allocate zeros to accumulate the gradiant over the batch.
+    for (int i = 0; i < numLayers - 1; i++) {
+        // Allocate memory on the GPU for change in weights
+        float* temp_weights;
+
+        size_t weightSize = layers[i + 1] * layers[i] * sizeof(float);
+
+        // Allocate GPU memory
+        cudaMalloc(&temp_weights, weightSize);
+
+        // Initialize the allocated memory to 0.0 (optional, but often needed)
+        cudaMemset(temp_weights, 0.0, weightSize);
+
+        // Store pointers in vectors
+        d_Weights.push_back(temp_weights);
+    }
+    return d_Weights
+}
+std::vector<float*> CUNN::allocate_like_biases() {
+    std::vector<float*> d_Biases;
 
     // Allocate zeros to accumulate the gradiant over the batch.
     for (int i = 0; i < numLayers - 1; i++) {
         // Allocate memory on the GPU for change in weights and biases
-        float* temp_weights;
         float* temp_biases;
 
-        size_t weightSize = layers[i + 1] * layers[i] * sizeof(float);
         size_t biasSize = layers[i + 1] * sizeof(float);
 
         // Allocate GPU memory
-        cudaMalloc(&temp_weights, weightSize);
         cudaMalloc(&temp_biases, biasSize);
 
         // Initialize the allocated memory to 0.0 (optional, but often needed)
-        cudaMemset(temp_weights, 0.0, weightSize);
         cudaMemset(temp_biases, 0.0, biasSize);
 
         // Store pointers in vectors
-        d_ddWeights.push_back(temp_weights);
-        d_ddBiases.push_back(temp_biases);
+        d_Biases.push_back(temp_biases);
+    }
+    return d_Biases;
+}
+void deallocateVector(std::vector<float*> vec) {
+    for (int i = 0; i < vec.size(); i++) {
+        cudaFree(vec[0]);
+    }
+}
+
+void CUNN::updateFromBatch(const float* d_batch, const int* d_labels, 
+    const int batchSize, const int N, const float learningRate) {
+
+    std::vector<float*> d_ddWeights = allocate_like_weights();
+    std::vector<float*> d_ddBiases = allocate_like_biases();
+
+    // calculate individual gradiants and average them together
+    for (int i = 0; i < batchSize; i++) {
+        std::vector<float*> d_dWeights = allocate_like_weights();
+        std::vector<float*> d_dBiases = allocate_like_biases();
+        //backwards(d_dWeights, d_dBiases, batch+i*n, labels+i);
+        for (int j = 0; j < numLayers-1; j++) {
+            //add(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], 1.0 / batchSize);
+            //add(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], 1.0 / batchSize);
+        }
+        deallocateVector(d_dWeights);
+        deallocateVector(d_dBiases);
+    }
+    // update the weights and biases with gradient computed above at the learning rate
+    for (int i = 0; i < numLayers-1; i++) {
+        //add(d_weights[j], d_ddWeights[j], d_weights[j], -learningRate);
+        //add(d_biases[j], d_ddBiases[j], d_biases[j], -learningRate);
     }
 
-    for (int i = 0; i < batchSize; i++) {
-        //backwards(dWeights, dBiases, batch[i], labels[i]);
-        for (int i = 0; i < weights.size(); i++) {
-            //add(weights[i], dWeights[i], weights[i], learningRate / batchSize);
-            //add(biases[i], dBiases[i], biases[i], learningRate / batchSize);
-        }
-    }
+    deallocateVector(d_ddWeights);
+    deallocateVector(d_ddBiases);
 }
 
 void CUNN::backwards(std::vector<Matrix>& dWeights_output,

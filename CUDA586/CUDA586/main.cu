@@ -103,6 +103,17 @@ int main() {
     //}
     //std::cout << "All values are correct!\n";
 
+    // TNN 1: Forward Z Test
+    CUNN tnn1(layers);
+    CUNN tnn2(layers);
+    tnn1.copyBiases({ biases_a1, biases_a2, biases_o });
+    tnn1.copyWeights({ weights_a1, weights_a2, weights_o });
+    tnn2.copyBiases({ biases_a1, biases_a2, biases_o });
+    tnn2.copyWeights({ weights_a1, weights_a2, weights_o });
+    tnn1.testForwardZ(false);
+    tnn2.testForwardZ(true);
+
+
     // NN 1: Copy Weights and Biases and Data
     std::cout << "Copying Parameters and Data to the GPU" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();

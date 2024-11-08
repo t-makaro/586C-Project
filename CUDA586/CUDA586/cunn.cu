@@ -60,6 +60,31 @@ void CUNN::copyParametersToDevice() {
     }
 }
 
+void CUNN::testForwardZ(bool isGpu)
+{
+    zs.reserve(numLayers);
+    for (int i = 0; i < numLayers; i++) {
+        activations.push_back(Vector(layers[i], 0.0));
+        zs.push_back(Vector(layers[i], 0.0));
+        if (i < numLayers - 1) {
+            dWeights.push_back(Matrix(layers[i + 1], Vector(layers[i], 0.0)));
+            dBiases.push_back(Vector(layers[i + 1], 0.0));
+        }
+    }
+
+    int i = 1;
+    if(isGpu)
+    {
+        cu_utility::cuForwardLayerWithZs(weights[i - 1], biases[i - 1], activations[i - 1], zs[i], activations[i]);
+    }
+    else
+    {
+	    forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
+        sigmoid(zs[i], activations[i]);
+    }
+    std::cout << zs[i][20]; // Breakpoint here to see
+}
+
 void CUNN::copyWeights(const std::vector<Matrix> weights) {
     assert(weights.size() == numLayers - 1);
     for (int i = 0; i < weights.size(); i++) {

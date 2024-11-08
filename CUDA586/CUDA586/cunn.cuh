@@ -26,6 +26,8 @@ public:
 
     void copyParametersToDevice();
 
+    void testForwardZ(bool isGpu);
+
 protected:
     int numLayers;
     std::vector<int> layers;

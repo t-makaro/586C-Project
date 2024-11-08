@@ -30,6 +30,14 @@ __device__ void sigmoid(float* A, int N) {
     }
 }
 
+__device__ void sigmoid_non_inplace(float* A, int N, float* Res)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < N) {
+        Res[i] = sigmoid(A[i]);
+    }
+}
+
 __device__ float d_sigmoid(float a) {
     float xp = exp(-a);
     return xp / ((1.0 + xp) * (1.0 + xp));
@@ -113,6 +121,14 @@ __global__ void global_forwardLayer(const float* W, const float* b,
     vectorAdd(result, b, result, N);
     // activate
     sigmoid(result, M);
+}
+
+__global__ void global_forwardLayer_zsi(const float* W, const float* b, const float* A, float* result, float* zsi, int M, int N)
+{
+    // We need the intermediate value Zs in the backward pass.
+    matMulVec(W, A, zsi, M, N);
+    vectorAdd(zsi, b, zsi, N);
+    sigmoid_non_inplace(zsi, M, result);
 }
 
 __global__ void global_test_kernel_matTran_outerProduct(const float* A, const float* B, int M, int N, float* resOuterProduct, float* resTranspose)
@@ -303,6 +319,56 @@ std::vector<float>& cu_utility::cuForwardLayer(
     cudaFree(d_b);
     cudaFree(d_x);
     cudaFree(d_y);
+
+    return result;
+}
+
+std::vector<float>& cu_utility::cuForwardLayerWithZs(const std::vector<std::vector<float>>& W,
+	const std::vector<float>& b, const std::vector<float>& x, std::vector<float>& zsi, std::vector<float>& result)
+{
+    int M = result.size();
+    int N = x.size();
+
+    size_t sizeW = M * N * sizeof(float);
+    size_t sizeb = M * sizeof(float);
+    size_t sizeX = N * sizeof(float);
+    size_t sizeY = M * sizeof(float);
+    size_t sizeZsi = N * sizeof(float);
+
+    // Allocate device memory
+    float* d_W, * d_b, * d_x, * d_y, * d_zsi;
+    cudaMalloc(&d_W, sizeW);
+    cudaMalloc(&d_b, sizeb);
+    cudaMalloc(&d_x, sizeX);
+    cudaMalloc(&d_y, sizeY);
+    cudaMalloc(&d_zsi, sizeZsi);
+
+    // Copy data from host to device
+    std::vector<float> W_flattened(M * N);
+    for (int i = 0; i < M; i++) {
+        std::copy(W[i].begin(), W[i].end(), W_flattened.begin() + i * N);
+    }
+    cudaMemcpy(d_W, W_flattened.data(), sizeW, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_b, b.data(), sizeb, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_x, x.data(), sizeX, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_zsi, zsi.data(), sizeZsi, cudaMemcpyHostToDevice);
+
+    // Launch the kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    global_forwardLayer_zsi<< <blocksPerGrid, threadsPerBlock >> > (d_W, d_b, d_x, d_y,d_zsi,
+        M, N);
+
+    // Copy result from device to host
+    cudaMemcpy(result.data(), d_y, sizeY, cudaMemcpyDeviceToHost);
+    cudaMemcpy(zsi.data(), d_zsi, sizeZsi, cudaMemcpyDeviceToHost);
+
+    cudaFree(d_W);
+    cudaFree(d_b);
+    cudaFree(d_x);
+    cudaFree(d_y);
+    cudaFree(d_zsi);
 
     return result;
 }

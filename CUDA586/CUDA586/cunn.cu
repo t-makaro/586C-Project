@@ -128,7 +128,7 @@ std::vector<float*> CUNN::allocate_like_weights() {
         // Store pointers in vectors
         d_Weights.push_back(temp_weights);
     }
-    return d_Weights
+    return d_Weights;
 }
 std::vector<float*> CUNN::allocate_like_biases() {
     std::vector<float*> d_Biases;

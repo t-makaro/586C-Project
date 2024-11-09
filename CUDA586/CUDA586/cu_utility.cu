@@ -70,6 +70,37 @@ __device__ void transpose(const float* input, float* output, int M, int N) {
     }
 }
 
+__device__ void transposeMultiply(const float* mat, const float* vec, float* output, int M, int N)
+{
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < N) {
+        float sum = 0.0f;
+        for (int col = 0; col < M; ++col) {
+            sum += mat[col * N + row] * vec[col];
+        }
+        output[row] = sum;
+    }
+}
+
+__device__ void multiply_elementwise(const float* A, const float* B, int N, float* result)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < N)
+    {
+        result[i] = A[i] * B[i];
+    }
+}
+
+__device__ void cost_derivative(const float* last_activation, const int label, float* result)
+{
+	// TODO
+}
+
+__device__ void activation_derivative()
+{
+	// TODO
+}
+
 // Global Kernels
 __global__ void global_vectorAdd(const float* A, const float* B, float* C,
     int N) {
@@ -131,10 +162,27 @@ __global__ void global_forwardLayer_zsi(const float* W, const float* b, const fl
     sigmoid_non_inplace(zsi, M, result);
 }
 
+__global__ void global_backwardLayer_output(float* outActivation, float* inActivation, float* bias_output, float* weight_output, float* zsi, float* delta, int testLabel)
+{
+    // TODO
+	// Output layer of backward propagation. Running Cost Derivative
+}
+
+__global__ void global_backwardLayer_regular(float* outActivation, float* inActivation, float* bias_output, float* weight_output, float* zsi, float* delta, int testLabel)
+{
+    // TODO
+	// All other layers of backward pass. Running activation_derivative
+}
+
 __global__ void global_test_kernel_matTran_outerProduct(const float* A, const float* B, int M, int N, float* resOuterProduct, float* resTranspose)
 {
     outer_product(A, B, M, N, resOuterProduct);
     transpose(resOuterProduct, resTranspose, M, N); // Rearrange the input to N * M
+}
+
+__global__ void global_test_kernel_matTranMul(const float* mat, const float* vec, int M, int N, float* res)
+{
+    transposeMultiply(mat, vec, res, M, N);
 }
 
 cu_utility::cu_utility(/* args */) {}
@@ -424,12 +472,26 @@ void cu_utility::testOuterProductAndTranspose(const std::vector<float>& a, const
     // Transpose: 4 8 12 / 5 10 15 / 6 12 18 / 7 14 21
     global_test_kernel_matTran_outerProduct << <blocksPerGrid, threadsPerBlock >> >(d_a, d_b, a.size(), b.size(), d_outer, d_transpose);
 
+    // 3 x 4 matrix multiply (1,0,2)
+    float c[] = { 1,0,2 };
+    std::vector<float> res;
+    res.resize(4);
+
+    float* d_c;
+    float* d_res;
+    cudaMalloc(&d_c, 3 * sizeof(float));
+    cudaMalloc(&d_res, 4 * sizeof(float));
+    cudaMemcpy(d_c, c, 3 * sizeof(float), cudaMemcpyHostToDevice);
+    global_test_kernel_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_outer, d_c, 3, 4, d_res);
+
     outer.resize(matrix_len);
     transp.resize(matrix_len);
 
     cudaDeviceSynchronize();
     cudaMemcpy(outer.data(), d_outer, matrix_len * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(transp.data(), d_transpose, matrix_len * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(res.data(), d_res, 4 * sizeof(float), cudaMemcpyDeviceToHost);
+    printVector(res, 1);
 
     
     cudaFree(d_outer);

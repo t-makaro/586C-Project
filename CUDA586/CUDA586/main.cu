@@ -113,6 +113,23 @@ int main() {
     tnn1.testForwardZ(false);
     tnn2.testForwardZ(true);
 
+#define BACK_TEST true
+    // TNN 2: Backward Test
+    CUNN tnn3(layers);
+    if(BACK_TEST)
+    {
+        auto biases_a1_i = utility::ReadBias("../../data/biases_a1_init.csv");
+        auto weights_a1_i = utility::ReadWeight("../../data/weights_a1_init.csv");
+        auto biases_a2_i = utility::ReadBias("../../data/biases_a2_init.csv");
+        auto weights_a2_i = utility::ReadWeight("../../data/weights_a2_init.csv");
+        auto biases_o_i = utility::ReadBias("../../data/biases_o_init.csv");
+        auto weights_o_i = utility::ReadWeight("../../data/weights_o_init.csv");
+
+        tnn3.copyBiases({ biases_a1_i, biases_a2_i, biases_o_i });
+        tnn3.copyWeights({ weights_a1_i, weights_a2_i, weights_o_i });
+    }
+    
+
 
     // NN 1: Copy Weights and Biases and Data
     std::cout << "Copying Parameters and Data to the GPU" << std::endl;

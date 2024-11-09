@@ -50,6 +50,14 @@ __device__ void d_sigmoid(float* A, int N) {
     }
 }
 
+__device__ void d_sigmoid_non_inplace(float* A, int N, float* Res)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < N) {
+        Res[i] = d_sigmoid(A[i]);
+    }
+}
+
 __device__ void outer_product(const float* A, const float* B, int M, int N, float* result) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < M * N) { //M*N = 784*300 = 235,200. That seems like a bad idea.
@@ -93,7 +101,16 @@ __device__ void multiply_elementwise(const float* A, const float* B, int N, floa
 
 __device__ void cost_derivative(const float* last_activation, const int label, float* result)
 {
-	// TODO
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if(i < 10)
+    {
+        if (i == label) {
+            result[i] = -1.0f / (last_activation[i] + FLT_EPSILON);
+        }
+        else {
+            result[i] = 1.0f / (1.0f - last_activation[i] + FLT_EPSILON);
+        }
+    }
 }
 
 __device__ void activation_derivative()
@@ -162,13 +179,18 @@ __global__ void global_forwardLayer_zsi(const float* W, const float* b, const fl
     sigmoid_non_inplace(zsi, M, result);
 }
 
-__global__ void global_backwardLayer_output(float* outActivation, float* inActivation, float* bias_output, float* weight_output, float* zsi, float* delta, int testLabel)
+__global__ void global_backwardLayer_output(const float* outActivation, const float* inActivation, float* bias_output, float* weight_output, float* zsi, float* zstemp, float* delta, int testLabel, int outLayerLength, int inLayerLength)
 {
     // TODO
 	// Output layer of backward propagation. Running Cost Derivative
+    // For our problem, this outLayerLength can be hardcoded as 10
+    cost_derivative(outActivation, testLabel, delta); // Keep in mind we are moving backwards. outActivation is the out layer and inActivation is the input layer.
+    d_sigmoid_non_inplace(zsi, outLayerLength, zstemp);
+    multiply_elementwise(zstemp, delta, outLayerLength, bias_output);
+    outer_product(bias_output, inActivation, inLayerLength, outLayerLength,weight_output);
 }
 
-__global__ void global_backwardLayer_regular(float* outActivation, float* inActivation, float* bias_output, float* weight_output, float* zsi, float* delta, int testLabel)
+__global__ void global_backwardLayer_regular(float* outActivation, float* inActivation, float* bias_output, float* weight_output, float* zsi, float* delta, int testLabel, int layerLength)
 {
     // TODO
 	// All other layers of backward pass. Running activation_derivative
@@ -421,6 +443,30 @@ std::vector<float>& cu_utility::cuForwardLayerWithZs(const std::vector<std::vect
     return result;
 }
 
+std::vector<float>& cu_utility::cuBackwardOutputLayer(std::vector<float>& outActivation,
+	std::vector<float>& inActivation, std::vector<float>& bias_output, std::vector<std::vector<float>>& weight_output,
+	std::vector<float>& zsi, std::vector<float>& delta, int testLabel)
+{
+    size_t M = outActivation.size();
+    size_t N = delta.size(); // or inActivation size
+    size_t f_size = sizeof(float);
+    if(N != 10)
+    {
+        std::cerr << "Output layer should have an output size of 10!";
+    }
+    // TODO: Malloc
+    float* d_out, * d_in, * d_bias, * d_weight, * d_zsi, * d_zstemp, *d_delta;
+    
+    cudaMalloc(&d_zstemp, N * f_size);
+
+    // Launch the kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    global_backwardLayer_output << <blocksPerGrid, threadsPerBlock >> > (d_out, d_in, d_bias, d_weight, d_zsi, d_zstemp, d_delta, testLabel, M, N);
+    return delta;
+}
+
 float* cu_utility::copyDataToDevice(Matrix& X) {
     // flatten X
     int M = X.size();
@@ -482,7 +528,9 @@ void cu_utility::testOuterProductAndTranspose(const std::vector<float>& a, const
     cudaMalloc(&d_c, 3 * sizeof(float));
     cudaMalloc(&d_res, 4 * sizeof(float));
     cudaMemcpy(d_c, c, 3 * sizeof(float), cudaMemcpyHostToDevice);
-    global_test_kernel_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_outer, d_c, 3, 4, d_res);
+    // Desired Output
+    // 28 35 42 49
+    global_test_kernel_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_outer, d_c, 3, 4, d_res); // Note that you have to input the TRANSPOSED LENGTH of the matrix!
 
     outer.resize(matrix_len);
     transp.resize(matrix_len);

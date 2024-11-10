@@ -45,6 +45,7 @@ __device__ void matMul(const float* W, const float* X, float* result, int M, int
     }
 }
 
+
 __device__ float sigmoid(float a) { return 1.0 / (1.0 + exp(-a)); }
 
 __device__ void sigmoid(float* A, int N) {
@@ -73,6 +74,15 @@ __device__ void d_sigmoid_non_inplace(float* A, int N, float* Res)
         Res[i] = d_sigmoid(A[i]);
     }
 }
+
+__device__ void sigmoid_non_inplace(float* A, int N, float* Res)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < N) {
+        Res[i] = sigmoid(A[i]);
+    }
+}
+
 
 __device__ void outer_product(const float* A, const float* B, int M, int N, float* result) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -129,10 +139,18 @@ __device__ void cost_derivative(const float* last_activation, const int label, f
     }
 }
 
+
 __device__ void activation_derivative()
 {
 	// TODO
 }
+
+__global__ void global_test_kernel_matTran_outerProduct(const float* A, const float* B, int M, int N, float* resOuterProduct, float* resTranspose)
+{
+    outer_product(A, B, M, N, resOuterProduct);
+    transpose(resOuterProduct, resTranspose, M, N);
+}
+
 
 // Global Kernels
 __global__ void global_vectorAdd(const float* A, const float* B, float* C,
@@ -186,6 +204,33 @@ __global__ void global_forwardLayer(const float* W, const float* b,
     // activate
     sigmoid(result, M);
 }
+
+__global__ void global_forwardLayer_zsi(const float* W, const float* b, const float* A, float* result, float* zsi, int M, int N)
+{
+    // We need the intermediate value Zs in the backward pass.
+    matMulVec(W, A, zsi, M, N);
+    vectorAdd(zsi, b, zsi, N);
+    sigmoid_non_inplace(zsi, M, result);
+}
+
+
+__global__ void global_backwardLayer_output(const float* outActivation, const float* inActivation, float* bias_output, float* weight_output, float* zsi, float* zstemp, float* delta, int testLabel, int outLayerLength, int inLayerLength)
+{
+    // TODO
+    // Output layer of backward propagation. Running Cost Derivative
+    // For our problem, this outLayerLength can be hardcoded as 10
+    cost_derivative(outActivation, testLabel, delta); // Keep in mind we are moving backwards. outActivation is the out layer and inActivation is the input layer.
+    d_sigmoid_non_inplace(zsi, outLayerLength, zstemp);
+    multiply_elementwise(zstemp, delta, outLayerLength, bias_output);
+    outer_product(bias_output, inActivation, inLayerLength, outLayerLength, weight_output);
+}
+
+__global__ void global_test_kernel_matTranMul(const float* mat, const float* vec, int M, int N, float* res)
+{
+    transposeMultiply(mat, vec, res, M, N);
+}
+
+
 
 cu_utility::cu_utility(/* args */) {}
 
@@ -628,16 +673,16 @@ std::vector<std::vector<float>>& cu_utility::cuForwardBatch(
 	cudaDeviceSynchronize();
     for (int i = 0; i < M; i += batchSize) {
 		const float* d_x = d_X + i * N;
-		global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[0], d_biases[0], d_x, d_activations_batch[1], layers[1], layers[0], batchSize);
+		//global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[0], d_biases[0], d_x, d_activations_batch[1], layers[1], layers[0], batchSize);
         cudaDeviceSynchronize();
         for (int layer = 2; layer < layers.size(); layer++) {
             // Launch the kernel
             if (layer == layers.size() - 1) {
                 // use predictions pointer
-				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_predictions + i * result[0].size(), layers[layer], layers[layer - 1], batchSize);
+				//global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_predictions + i * result[0].size(), layers[layer], layers[layer - 1], batchSize);
             }
             else {
-				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_activations_batch[layer], layers[layer], layers[layer - 1], batchSize);
+				//global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_activations_batch[layer], layers[layer], layers[layer - 1], batchSize);
             }
             cudaDeviceSynchronize();
         }   

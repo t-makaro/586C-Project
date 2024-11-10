@@ -27,6 +27,8 @@ public:
     static float d_sigmoid(float x);
 
     void copyParametersToDevice();
+    void CUNN::testForwardZ(bool isGpu);
+    void setBatchSizeDevice(int batchSize);
 
 protected:
     int numLayers;

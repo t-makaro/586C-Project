@@ -49,11 +49,13 @@ protected:
     std::vector<float *> d_weights;
     std::vector<float *> d_biases;
     std::vector<float *> d_activations;
+    std::vector<float*> d_zs;
 
 	int batchSize = 1;
 ;   std::vector<float *> d_weights_batch;
     std::vector<float *> d_biases_batch;
     std::vector<float *> d_activations_batch;
+    
 ;
     void deviceAlloc();
 
@@ -73,8 +75,8 @@ private:
     static Vector& forwardLayer(const Matrix& w, const Vector& b,
         const Vector& a, Vector& result);
 
-    void backwards(std::vector<float*> dWeights_output,
-        std::vector<float*> dBiases_output,
+    void backwards(std::vector<float*> &dWeights_output,
+        std::vector<float*> &dBiases_output,
         const float* testData, const int* testLabel);
     void cost_derivative(const Vector& last_activation, const int label,
         Vector& result);

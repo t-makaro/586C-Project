@@ -5,6 +5,7 @@ CUNN::CUNN(std::vector<int> layers) : layers(layers) {
     weights.reserve(numLayers - 1);
     biases.reserve(numLayers - 1);
     activations.reserve(numLayers);
+    d_zs.reserve(numLayers);
 
     /*d_weights.reserve(numLayers - 1);
     d_biases.reserve(numLayers - 1);
@@ -16,6 +17,7 @@ CUNN::CUNN(std::vector<int> layers) : layers(layers) {
 	d_weights.resize(numLayers - 1);
 	d_biases.resize(numLayers - 1);
 	d_activations.resize(numLayers);
+    d_zs.resize(numLayers);
 
 	d_activations_batch.resize(numLayers);
 }
@@ -26,6 +28,7 @@ CUNN::~CUNN() {}
 void CUNN::deviceAlloc() {
     size_t sizeA0 = layers[0] * sizeof(float); // input vector
     cudaMalloc(&d_activations[0], sizeA0);
+    cudaMalloc(&d_zs[0], sizeA0);
 
     for (int i = 1; i < numLayers; i++) {
         int M = layers[i-1];
@@ -38,15 +41,18 @@ void CUNN::deviceAlloc() {
 		cudaMalloc(&d_weights[i - 1], sizeWi);
 		cudaMalloc(&d_biases[i - 1], sizeBi);
 		cudaMalloc(&d_activations[i], sizeAi);
+        cudaMalloc(&d_zs[i], sizeAi);
     }
 }
 
 void CUNN::deviceFree() {
     cudaFree(d_activations[0]);
+    cudaFree(d_zs[0]);
     for (int i = 1; i < numLayers; i++) {
         cudaFree(d_weights[i - 1]);
         cudaFree(d_biases[i - 1]);
         cudaFree(d_activations[i]);
+        cudaFree(d_zs[i]);
     }
 }
 
@@ -203,7 +209,7 @@ std::vector<float*> CUNN::allocate_like_biases() {
     }
     return d_Biases;
 }
-void deallocateVector(std::vector<float*> vec) {
+void deallocateVector(const std::vector<float*> &vec) {
     for (int i = 0; i < vec.size(); i++) {
         cudaFree(vec[0]);
     }
@@ -238,8 +244,8 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     deallocateVector(d_ddBiases);
 }
 
-void CUNN::backwards(std::vector<float*> dWeights_output,
-    std::vector<float*> dBiases_output,
+void CUNN::backwards(std::vector<float*> &dWeights_output,
+    std::vector<float*> &dBiases_output,
     const float* testData, const int* testLabel) {
     // activations[0] = testData;
     for (int i = 1; i < numLayers; i++) {

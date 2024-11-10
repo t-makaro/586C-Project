@@ -167,6 +167,9 @@ int main() {
     //nn.evaluate(csvTestData, testLabels);
 	nn.evaluate(d_testData, testLabels);
 
+    // NN 4: Training Set
+    nn.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);
+
     // Free thhe GPU memory
     cudaFree(d_trainData);
     cudaFree(d_trainLabels);

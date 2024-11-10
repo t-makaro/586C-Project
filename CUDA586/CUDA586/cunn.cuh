@@ -73,9 +73,9 @@ private:
     static Vector& forwardLayer(const Matrix& w, const Vector& b,
         const Vector& a, Vector& result);
 
-    void backwards(std::vector<Matrix>& dWeights_output,
-        std::vector<Vector>& dBiases_output, const Vector& testData,
-        const int testLabel);
+    void backwards(std::vector<float*> dWeights_output,
+        std::vector<float*> dBiases_output,
+        const float* testData, const int* testLabel);
     void cost_derivative(const Vector& last_activation, const int label,
         Vector& result);
     void activation_derivative(const Matrix& weights, Vector& z,

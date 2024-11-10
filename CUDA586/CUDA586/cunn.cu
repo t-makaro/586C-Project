@@ -219,7 +219,8 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     for (int i = 0; i < batchSize; i++) {
         std::vector<float*> d_dWeights = allocate_like_weights();
         std::vector<float*> d_dBiases = allocate_like_biases();
-        //backwards(d_dWeights, d_dBiases, batch+i*n, labels+i);
+        
+        backwards(d_dWeights, d_dBiases, d_batch+i*N, d_labels+i);
         for (int j = 0; j < numLayers-1; j++) {
             cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[j + 1] * layers[j], 1.0 / batchSize);
             cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[j + 1], 1.0 / batchSize);
@@ -237,10 +238,10 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     deallocateVector(d_ddBiases);
 }
 
-void CUNN::backwards(std::vector<Matrix>& dWeights_output,
-    std::vector<Vector>& dBiases_output,
-    const Vector& testData, int testLabel) {
-    activations[0] = testData;
+void CUNN::backwards(std::vector<float*> dWeights_output,
+    std::vector<float*> dBiases_output,
+    const float* testData, const int* testLabel) {
+    // activations[0] = testData;
     for (int i = 1; i < numLayers; i++) {
         forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
         sigmoid(zs[i], activations[i]);
@@ -248,18 +249,11 @@ void CUNN::backwards(std::vector<Matrix>& dWeights_output,
     Vector delta;
     for (int i = 0; i < numLayers - 1; i++) {
         if (i == 0) {
-            cost_derivative(activations[activations.size() - 1], testLabel,
-                delta);
+
         }
         else {
-            activation_derivative(weights[numLayers - i], zs[numLayers - i],
-                delta);
+
         }
-        multiply_elementwise(d_sigmoid(zs[numLayers - 1 - i]), delta,
-            dBiases_output[numLayers - 1 - i]);
-        outer_product(activations[numLayers - 2 - i],
-            dBiases_output[numLayers - 1 - i],
-            dWeights_output[numLayers - 1 - i]);
     }
 }
 

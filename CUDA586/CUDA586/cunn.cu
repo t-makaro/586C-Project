@@ -16,6 +16,8 @@ CUNN::CUNN(std::vector<int> layers) : layers(layers) {
 	d_weights.resize(numLayers - 1);
 	d_biases.resize(numLayers - 1);
 	d_activations.resize(numLayers);
+
+	d_activations_batch.resize(numLayers);
 }
 
 CUNN::~CUNN() {}
@@ -38,6 +40,31 @@ void CUNN::deviceAlloc() {
 		cudaMalloc(&d_activations[i], sizeAi);
     }
 }
+
+void CUNN::deviceFree() {
+    cudaFree(d_activations[0]);
+    for (int i = 1; i < numLayers; i++) {
+        cudaFree(d_weights[i - 1]);
+        cudaFree(d_biases[i - 1]);
+        cudaFree(d_activations[i]);
+    }
+}
+
+void CUNN::setBatchSizeDevice(int batchSize) {
+	this->batchSize = batchSize;
+
+    size_t sizeA0 = layers[0] * batchSize * sizeof(float); // input batch 
+    cudaMalloc(&d_activations_batch[0], sizeA0);
+
+    for (int i = 1; i < numLayers; i++) {
+        int M = layers[i-1];
+        int N = layers[i];
+        
+        size_t sizeAi = N * sizeof(float) * batchSize;
+		cudaMalloc(&d_activations_batch[i], sizeAi);
+    }
+}
+
 
 void CUNN::copyParametersToDevice() {
     deviceAlloc();
@@ -295,24 +322,6 @@ float CUNN::evaluate(const Matrix& testData,
     // timing
     auto start = std::chrono::high_resolution_clock::now();
 
-    //Vector result(10, 0);
-    //for (int i = 0; i < testData.size(); i++) {
-    //    Vector input = testData[i];
-    //    Vector output = forward(input, result);
-
-    //    int maxIndex = 0;
-    //    float maxVal = 0;
-    //    for (int j = 0; j < output.size(); j++) {
-    //        if (output[j] > maxVal) {
-    //            maxVal = output[j];
-    //            maxIndex = j;
-    //        }
-    //    }
-    //    if (maxIndex == testLabels[i]) {
-    //        numCorrect++;
-    //    }
-    //}
-
     // should be testLabels.size() x 10
     // reserve memory for predictions
 	Matrix predictions(testLabels.size(), Vector(10, 0));
@@ -343,6 +352,42 @@ float CUNN::evaluate(const Matrix& testData,
     std::cout << "Train Accuracy: " << accuracy << std::endl;
     return accuracy;
 }
+
+float CUNN::evaluate(const float* testData, const std::vector<int>& testLabels) {
+    int numCorrect = 0;
+
+    // timing
+    auto start = std::chrono::high_resolution_clock::now();
+	Matrix predictions(testLabels.size(), Vector(10, 0));
+	cu_utility::cuForwardBatch(d_weights, d_biases, d_activations_batch, layers, testData, batchSize, predictions);
+
+    for (int i = 0; i < predictions.size(); i++) {
+        Vector pred = predictions[i];
+        int maxIndex = 0;
+        float maxVal = 0;
+        for (int j = 0; j < pred.size(); j++) {
+            if (pred[j] > maxVal) {
+                maxVal = pred[j];
+                maxIndex = j;
+            }
+        }
+        if (maxIndex == testLabels[i]) {
+            numCorrect++;
+        }
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    std::cout << "done." << std::endl;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds."
+        << std::endl;
+    float accuracy = (float)numCorrect / testLabels.size();
+    std::cout << "Train Accuracy: " << accuracy << std::endl;
+    return accuracy;
+
+}
+
 
 Vector& CUNN::forwardZ(const Matrix& w, const Vector& b, const Vector& a,
     Vector& result) {

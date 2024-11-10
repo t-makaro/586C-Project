@@ -9,6 +9,17 @@ __device__ void vectorAdd(const float* A, const float* B, float* C, int N) {
     }
 }
 
+// in-place
+// W of shape MxN, b of shape 1xN
+__device__ void matAddVec(float* WX, const float* b, int M, int N) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (i < M && j < N) {
+		WX[i * N + j] += b[j];
+    }
+}
+
 __device__ void matMulVec(const float* W, const float* X, float* Y, int M,
     int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -21,20 +32,25 @@ __device__ void matMulVec(const float* W, const float* X, float* Y, int M,
     }
 }
 
+__device__ void matMul(const float* W, const float* X, float* result, int M, int N, int K) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (i < M && j < K) {
+        float tmp = 0.0;
+        for (int k = 0; k < N; k++) {
+			tmp += W[i * N + k] * X[k * K + j];
+        }
+        result[i * K + j] = tmp;
+    }
+}
+
 __device__ float sigmoid(float a) { return 1.0 / (1.0 + exp(-a)); }
 
 __device__ void sigmoid(float* A, int N) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
         A[i] = sigmoid(A[i]);
-    }
-}
-
-__device__ void sigmoid_non_inplace(float* A, int N, float* Res)
-{
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < N) {
-        Res[i] = sigmoid(A[i]);
     }
 }
 
@@ -169,42 +185,6 @@ __global__ void global_forwardLayer(const float* W, const float* b,
     vectorAdd(result, b, result, N);
     // activate
     sigmoid(result, M);
-}
-
-__global__ void global_forwardLayer_zsi(const float* W, const float* b, const float* A, float* result, float* zsi, int M, int N)
-{
-    // We need the intermediate value Zs in the backward pass.
-    matMulVec(W, A, zsi, M, N);
-    vectorAdd(zsi, b, zsi, N);
-    sigmoid_non_inplace(zsi, M, result);
-}
-
-__global__ void global_backwardLayer_output(const float* outActivation, const float* inActivation, float* bias_output, float* weight_output, float* zsi, float* zstemp, float* delta, int testLabel, int outLayerLength, int inLayerLength)
-{
-    // TODO
-	// Output layer of backward propagation. Running Cost Derivative
-    // For our problem, this outLayerLength can be hardcoded as 10
-    cost_derivative(outActivation, testLabel, delta); // Keep in mind we are moving backwards. outActivation is the out layer and inActivation is the input layer.
-    d_sigmoid_non_inplace(zsi, outLayerLength, zstemp);
-    multiply_elementwise(zstemp, delta, outLayerLength, bias_output);
-    outer_product(bias_output, inActivation, inLayerLength, outLayerLength,weight_output);
-}
-
-__global__ void global_backwardLayer_regular(float* outActivation, float* inActivation, float* bias_output, float* weight_output, float* zsi, float* delta, int testLabel, int layerLength)
-{
-    // TODO
-	// All other layers of backward pass. Running activation_derivative
-}
-
-__global__ void global_test_kernel_matTran_outerProduct(const float* A, const float* B, int M, int N, float* resOuterProduct, float* resTranspose)
-{
-    outer_product(A, B, M, N, resOuterProduct);
-    transpose(resOuterProduct, resTranspose, M, N); // Rearrange the input to N * M
-}
-
-__global__ void global_test_kernel_matTranMul(const float* mat, const float* vec, int M, int N, float* res)
-{
-    transposeMultiply(mat, vec, res, M, N);
 }
 
 cu_utility::cu_utility(/* args */) {}
@@ -485,6 +465,7 @@ float* cu_utility::copyDataToDevice(Matrix& X) {
 
     return d_X;
 }
+
 int* cu_utility::copyDataToDevice(std::vector<int>& X) {
     // copy to device
     int* d_X;
@@ -620,6 +601,59 @@ std::vector<std::vector<float>>& cu_utility::cuForward(
 	}
 
 	cudaFree(d_X);
+	cudaFree(d_predictions);
+
+	return result;
+}
+
+#define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
+
+std::vector<std::vector<float>>& cu_utility::cuForwardBatch(
+    const std::vector<float*> d_weights, const std::vector<float*> d_biases,
+    const std::vector<float*> d_activations_batch, const std::vector<int> layers,
+    const float* d_X,
+    int batchSize,
+    std::vector<std::vector<float>>& result
+) {
+	int M = result.size();
+    int N = 784;
+
+    // alloc memory for predictions
+	float* d_predictions;
+	cudaMalloc(&d_predictions, result.size() * result[0].size() * sizeof(float));
+
+    dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), 1);
+    dim3 blockDim(32, 32, 1);
+
+	cudaDeviceSynchronize();
+    for (int i = 0; i < M; i += batchSize) {
+		const float* d_x = d_X + i * N;
+		global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[0], d_biases[0], d_x, d_activations_batch[1], layers[1], layers[0], batchSize);
+        cudaDeviceSynchronize();
+        for (int layer = 2; layer < layers.size(); layer++) {
+            // Launch the kernel
+            if (layer == layers.size() - 1) {
+                // use predictions pointer
+				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_predictions + i * result[0].size(), layers[layer], layers[layer - 1], batchSize);
+            }
+            else {
+				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_activations_batch[layer], layers[layer], layers[layer - 1], batchSize);
+            }
+            cudaDeviceSynchronize();
+        }   
+    }
+
+    // Copy result from device to host
+    // predictionts flattened
+	size_t sizePred = M * layers[layers.size() - 1] * sizeof(float);
+	std::vector<float> predictions_flattened(M * layers[layers.size() - 1]);
+	cudaMemcpy(predictions_flattened.data(), d_predictions, sizePred, cudaMemcpyDeviceToHost);
+
+	// unflatten predictions
+	for (int i = 0; i < M; i++) {
+		std::copy(predictions_flattened.begin() + i * layers[layers.size() - 1], predictions_flattened.begin() + (i + 1) * layers[layers.size() - 1], result[i].begin());
+	}
+
 	cudaFree(d_predictions);
 
 	return result;

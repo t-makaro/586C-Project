@@ -17,6 +17,8 @@ public:
     void train(const float* d_trainingData, const int* d_trainingLabels, const int M, const int N,
         const int iterations, const int batchSize, const float learningRate);
     float evaluate(const Matrix& testData, const std::vector<int>& testLabels);
+    float evaluate(const float *testData, const std::vector<int>& testLabels);
+
 
     void copyWeights(const std::vector<Matrix> weights);
     void copyBiases(const std::vector<Vector> biases);
@@ -25,8 +27,6 @@ public:
     static float d_sigmoid(float x);
 
     void copyParametersToDevice();
-
-    void testForwardZ(bool isGpu);
 
 protected:
     int numLayers;
@@ -47,8 +47,15 @@ protected:
     std::vector<float *> d_weights;
     std::vector<float *> d_biases;
     std::vector<float *> d_activations;
+
+	int batchSize = 1;
+;   std::vector<float *> d_weights_batch;
+    std::vector<float *> d_biases_batch;
+    std::vector<float *> d_activations_batch;
 ;
     void deviceAlloc();
+
+	void deviceFree();
 
 
 private:

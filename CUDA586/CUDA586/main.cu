@@ -143,7 +143,7 @@ int main() {
     float* d_trainData = cu_utility::copyDataToDevice(csvTrainData);
     int* d_trainLabels = cu_utility::copyDataToDevice(trainLabels);
 
-    float* d_testData = cu_utility::copyDataToDevice(csvTrainData);
+    float* d_testData = cu_utility::copyDataToDevice(csvTestData);
     int* d_testLabels = cu_utility::copyDataToDevice(testLabels);
 
     int M_train = csvTrainData.size(); // num images
@@ -155,13 +155,17 @@ int main() {
     std::cout << "done." << std::endl;
     std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
 
+	nn.setBatchSizeDevice(1);
+
     // NN 2: Forward Pass Training Set
 	std::cout << "Evaluating on training set" << std::endl;
-    nn.evaluate(csvTrainData, trainLabels);
+    //nn.evaluate(csvTrainData, trainLabels);
+	nn.evaluate(d_trainData, trainLabels);
 
     // NN 3: Forward Pass Test Set
     std::cout << "Evaluating on test set" << std::endl;
-    nn.evaluate(csvTestData, testLabels);
+    //nn.evaluate(csvTestData, testLabels);
+	nn.evaluate(d_testData, testLabels);
 
     // Free thhe GPU memory
     cudaFree(d_trainData);

@@ -38,6 +38,13 @@ public:
 		const std::vector<float*> d_activations, const std::vector<int> layers,
 		const std::vector<std::vector<float>>& X, std::vector<std::vector<float>>& result
 	);
+	static std::vector<std::vector<float>>& cuForwardBatch(
+		const std::vector<float*> d_weights, const std::vector<float*> d_biases,
+		const std::vector<float*> d_activations_batch, const std::vector<int> layers,
+		const float *d_X, 
+		int batchSize,	
+		std::vector<std::vector<float>>& result
+	);
 	static float* copyDataToDevice(Matrix& X);
 
 	static int* copyDataToDevice(std::vector<int>& X);

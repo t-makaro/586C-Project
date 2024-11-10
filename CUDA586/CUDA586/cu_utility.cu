@@ -468,9 +468,19 @@ std::vector<float>& cu_utility::cuForwardLayerWithZs(const std::vector<std::vect
     return result;
 }
 
+void cu_utility::cuForwardLayerWithZs(const float* d_W, const float* d_b, const float* d_x,
+	float* d_zsi, float* d_y, int M, int N)
+{
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+    global_forwardLayer_zsi << <blocksPerGrid, threadsPerBlock >> > (d_W, d_b, d_x, d_y, d_zsi,
+        M, N);
+}
+
+
 std::vector<float>& cu_utility::cuBackwardOutputLayer(std::vector<float>& outActivation,
-	std::vector<float>& inActivation, std::vector<float>& bias_output, std::vector<std::vector<float>>& weight_output,
-	std::vector<float>& zsi, std::vector<float>& delta, int testLabel)
+                                                      std::vector<float>& inActivation, std::vector<float>& bias_output, std::vector<std::vector<float>>& weight_output,
+                                                      std::vector<float>& zsi, std::vector<float>& delta, int testLabel)
 {
     size_t M = outActivation.size();
     size_t N = delta.size(); // or inActivation size

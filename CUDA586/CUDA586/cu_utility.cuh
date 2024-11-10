@@ -29,9 +29,11 @@ public:
 	static std::vector<float>& cuForwardLayerWithZs(
 		const std::vector<std::vector<float>>& W, const std::vector<float>& b,
 		const std::vector<float>& x, std::vector<float>& zsi,std::vector<float>& result);
+	static void cuForwardLayerWithZs(const float* d_W, const float* d_b, const float* d_x, float* d_zsi, float* d_y, int M, int N);
 	static std::vector<float>& cuBackwardOutputLayer(std::vector<float>& outActivation, std::vector<float>& inActivation,
 		std::vector<float>& bias_output, std::vector<std::vector<float>>& weight_output,
 		std::vector<float>&zsi, std::vector<float>& delta, int testLabel);
+	
 
 	static std::vector<std::vector<float>>& cuForward(
 		const std::vector<float*> d_weights, const std::vector<float*> d_biases,

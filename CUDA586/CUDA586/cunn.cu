@@ -93,7 +93,7 @@ void CUNN::copyParametersToDevice() {
     }
 }
 
-void CUNN::testForwardZ(bool isGpu)
+void CUNN::testForwardZ(bool isGpu, Vector &testData)
 {
     zs.reserve(numLayers);
     for (int i = 0; i < numLayers; i++) {
@@ -105,17 +105,29 @@ void CUNN::testForwardZ(bool isGpu)
         }
     }
 
-    int i = 1;
+    int i = 1; // Run the first layer as a test
     if(isGpu)
     {
-        cu_utility::cuForwardLayerWithZs(weights[i - 1], biases[i - 1], activations[i - 1], zs[i], activations[i]);
+        // No alloc needed here, we called copyParametersToDevice outside
+        float* d_test;
+        size_t s = testData.size() * sizeof(float);
+        cudaMalloc(&d_test, s);
+        cudaMemcpy(d_test, testData.data(),s, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_activations[0], d_test, s, cudaMemcpyDeviceToDevice);
+
+        int N = layers[i - 1];
+        int M = layers[i];
+        cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i], d_activations[i], M, N);
+        cudaMemcpy(zs[i].data(),d_zs[i], zs[i].size() * sizeof(float), cudaMemcpyDeviceToHost);
+        deviceFree();
     }
     else
     {
+        activations[0] = testData;
 	    forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
         sigmoid(zs[i], activations[i]);
     }
-    std::cout << zs[i][20]; // Breakpoint here to see
+    cu_utility::printVector(zs[i], 10); // Breakpoint here to see
 }
 
 void CUNN::copyWeights(const std::vector<Matrix> weights) {
@@ -216,7 +228,7 @@ void deallocateVector(const std::vector<float*> &vec) {
 }
 
 void CUNN::updateFromBatch(const float* d_batch, const int* d_labels, 
-    const int batchSize, const int N, const float learningRate) {
+    const int batchSize, const int dataLen, const float learningRate) {
 
     std::vector<float*> d_ddWeights = allocate_like_weights();
     std::vector<float*> d_ddBiases = allocate_like_biases();
@@ -226,7 +238,7 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
         std::vector<float*> d_dWeights = allocate_like_weights();
         std::vector<float*> d_dBiases = allocate_like_biases();
         
-        backwards(d_dWeights, d_dBiases, d_batch+i*N, d_labels+i);
+        backwards(d_dWeights, d_dBiases, d_batch+i*dataLen, d_labels+i, dataLen);
         for (int j = 0; j < numLayers-1; j++) {
             cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[j + 1] * layers[j], 1.0 / batchSize);
             cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[j + 1], 1.0 / batchSize);
@@ -246,12 +258,17 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
 
 void CUNN::backwards(std::vector<float*> &dWeights_output,
     std::vector<float*> &dBiases_output,
-    const float* testData, const int* testLabel) {
-    // activations[0] = testData;
+    const float* testData, const int* testLabel, size_t dataLen) {
+
+    cudaMemcpy(d_activations[0], testData, dataLen, cudaMemcpyDeviceToDevice);// activations[0] = testData;
     for (int i = 1; i < numLayers; i++) {
-        forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
-        sigmoid(zs[i], activations[i]);
+        int M = layers[i - 1];
+        int N = layers[i];
+        //forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
+        //sigmoid(zs[i], activations[i]);
+        cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i],d_activations[i], M, N);
     }
+    return;
     Vector delta;
     for (int i = 0; i < numLayers - 1; i++) {
         if (i == 0) {

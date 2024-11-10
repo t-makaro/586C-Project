@@ -27,7 +27,7 @@ public:
     static float d_sigmoid(float x);
 
     void copyParametersToDevice();
-    void CUNN::testForwardZ(bool isGpu);
+    void testForwardZ(bool isGpu, Vector &testData);
     void setBatchSizeDevice(int batchSize);
 
 protected:
@@ -43,7 +43,7 @@ protected:
     std::vector<Vector> dBiases;
 
     void updateFromBatch(const float* d_batch, const int* d_labels,
-        const int batchSize, const int N, const float learningRate);
+        const int batchSize, const int dataLen, const float learningRate);
 
     // device pointers
     std::vector<float *> d_weights;
@@ -77,7 +77,7 @@ private:
 
     void backwards(std::vector<float*> &dWeights_output,
         std::vector<float*> &dBiases_output,
-        const float* testData, const int* testLabel);
+        const float* testData, const int* testLabel, size_t dataLen);
     void cost_derivative(const Vector& last_activation, const int label,
         Vector& result);
     void activation_derivative(const Matrix& weights, Vector& z,

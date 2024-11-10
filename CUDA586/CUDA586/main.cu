@@ -110,10 +110,11 @@ int main() {
     tnn1.copyWeights({ weights_a1, weights_a2, weights_o });
     tnn2.copyBiases({ biases_a1, biases_a2, biases_o });
     tnn2.copyWeights({ weights_a1, weights_a2, weights_o });
-    tnn1.testForwardZ(false);
-    tnn2.testForwardZ(true);
+    tnn2.copyParametersToDevice();
+    tnn1.testForwardZ(false, csvTestData[0]);
+    tnn2.testForwardZ(true, csvTestData[0]);
 
-#define BACK_TEST true
+#define BACK_TEST false
     // TNN 2: Backward Test
     CUNN tnn3(layers);
     if(BACK_TEST)

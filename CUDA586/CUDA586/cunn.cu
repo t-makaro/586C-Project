@@ -221,8 +221,8 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
         std::vector<float*> d_dBiases = allocate_like_biases();
         //backwards(d_dWeights, d_dBiases, batch+i*n, labels+i);
         for (int j = 0; j < numLayers-1; j++) {
-            cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[i + 1] * layers[i], 1.0 / batchSize);
-            cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[i + 1], 1.0 / batchSize);
+            cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[j + 1] * layers[j], 1.0 / batchSize);
+            cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[j + 1], 1.0 / batchSize);
         }
         deallocateVector(d_dWeights);
         deallocateVector(d_dBiases);

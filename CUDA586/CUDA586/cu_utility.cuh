@@ -33,7 +33,7 @@ public:
 	static void cuBackwardOutputLayer(float* d_outActivation, float* d_inActivation,
 		float* d_bias_output, float* d_weight_output,
 		float* d_zsi, float* d_delta, const int* d_testLabel, int outSize, int inSize);
-	
+
 
 	static std::vector<std::vector<float>>& cuForward(
 		const std::vector<float*> d_weights, const std::vector<float*> d_biases,

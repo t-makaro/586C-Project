@@ -140,9 +140,12 @@ __device__ void cost_derivative(const float* last_activation, const int label, c
 }
 
 
-__device__ void activation_derivative()
+__device__ void activation_derivative(const float* d_weight, float* d_zsi, float* d_zstemp, float* d_prev_delta, float* d_new_delta, int inLayerLength, int outLayerLength)
 {
 	// TODO
+    d_sigmoid_non_inplace(d_zsi, outLayerLength, d_zstemp);
+    multiply_elementwise(d_zstemp, d_prev_delta, outLayerLength, d_prev_delta);
+    transposeMultiply(d_weight, d_prev_delta, d_new_delta, outLayerLength, inLayerLength);
 }
 
 __global__ void global_test_kernel_matTran_outerProduct(const float* A, const float* B, int M, int N, float* resOuterProduct, float* resTranspose)
@@ -216,7 +219,6 @@ __global__ void global_forwardLayer_zsi(const float* W, const float* b, const fl
 
 __global__ void global_backwardLayer_output(const float* outActivation, float* bias_output, float* zsi, float* zstemp, float* delta,const int* d_testLabel, int outLayerLength)
 {
-    // TODO
     // Output layer of backward propagation. Running Cost Derivative
     // For our problem, this outLayerLength can be hardcoded as 10
     cost_derivative(outActivation, *d_testLabel, outLayerLength, delta); // Keep in mind we are moving backwards. outActivation is the output layer and inActivation is the input layer.
@@ -499,6 +501,7 @@ void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActiva
     if(outSize != 10)
     {
         std::cerr << "Output layer should have an output size of 10!";
+        return;
     }
     // TODO: Malloc
     float* d_zstemp;
@@ -514,6 +517,11 @@ void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActiva
     cudaDeviceSynchronize();
     global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_weight_output, outSize, inSize);
 }
+
+//void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input, float* d_dWeight_output, float* d_zsi, float* d_delta, int inSize, int outSize)
+//{
+//	// TODO
+//}
 
 float* cu_utility::copyDataToDevice(Matrix& X) {
     // flatten X
@@ -580,6 +588,7 @@ void cu_utility::testOuterProductAndTranspose(const std::vector<float>& a, const
     // Desired Output
     // 28 35 42 49
     global_test_kernel_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_outer, d_c, 3, 4, d_res); // Note that you have to input the TRANSPOSED LENGTH of the matrix!
+    // Or TLDR: M = d_c.size(), N = d_res.size()
 
     outer.resize(matrix_len);
     transp.resize(matrix_len);

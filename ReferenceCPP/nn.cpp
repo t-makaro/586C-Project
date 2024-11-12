@@ -103,7 +103,7 @@ void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dB
       cost_derivative(activations[numLayers-1], testLabel, delta);
     }
     else{
-      activation_derivative(weights[weights.size() - i], zs[numLayers - i], delta);
+      activation_derivative(weights[numLayers - 1 - i], zs[numLayers - i], delta);
     }
     Vector z_temp = Vector(zs[numLayers - 1 - i].size(), 0);
     d_sigmoid(zs[numLayers - 1 - i], z_temp);

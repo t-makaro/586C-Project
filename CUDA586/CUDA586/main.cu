@@ -7,16 +7,16 @@
 
 int main() {
     // TEST CASES
-    std::vector<float> t_a = {1.f, 2.f, 3.f};
-    std::vector<float> t_b = {4.f, 5.f, 6.f, 7.f};
+    std::vector<float> t_a = {1.f, 2.f, 3.f,4.f, 5.f, 6.f};
+    std::vector<float> t_b = {4.f, 5.f, 6.f, 7.f, 8.f, 9.f};
     std::vector<float> t_outer, t_transpose;
     cu_utility::printVector(t_a, 0);
-    cu_utility::printVector(t_b, 2);
+    cu_utility::printVector(t_b, 3);
 
     cu_utility::testOuterProductAndTranspose(t_a, t_b, t_outer, t_transpose);
     cudaDeviceSynchronize();
-    cu_utility::printVector(t_outer, 4);
-    cu_utility::printVector(t_transpose, 3);
+    cu_utility::printVector(t_outer, 6);
+    cu_utility::printVector(t_transpose, 6);
 
      // NN 0: Init Neural Network
      std::vector<int> layers = { 784, 300, 300, 10 };
@@ -104,19 +104,24 @@ int main() {
     //std::cout << "All values are correct!\n";
 
     // TNN 1: Forward Z Test
+#define FORWARD_TEST false
+
     CUNN tnn1(layers);
     CUNN tnn2(layers);
     tnn1.copyBiases({ biases_a1, biases_a2, biases_o });
     tnn1.copyWeights({ weights_a1, weights_a2, weights_o });
     tnn2.copyBiases({ biases_a1, biases_a2, biases_o });
     tnn2.copyWeights({ weights_a1, weights_a2, weights_o });
+#if FORWARD_TEST
     tnn2.copyParametersToDevice();
     tnn1.testForwardZ(false, csvTestData[0]);
     tnn2.testForwardZ(true, csvTestData[0]);
+#endif
 
-#define BACK_TEST false
+#define BACK_TEST true
     // TNN 2: Backward Test
     CUNN tnn3(layers);
+    CUNN tnn4(layers);
     if(BACK_TEST)
     {
         auto biases_a1_i = utility::ReadBias("../../data/biases_a1_init.csv");
@@ -128,6 +133,13 @@ int main() {
 
         tnn3.copyBiases({ biases_a1_i, biases_a2_i, biases_o_i });
         tnn3.copyWeights({ weights_a1_i, weights_a2_i, weights_o_i });
+        tnn4.copyBiases({ biases_a1_i, biases_a2_i, biases_o_i });
+        tnn4.copyWeights({ weights_a1_i, weights_a2_i, weights_o_i });
+
+        tnn3.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
+
+        tnn4.copyParametersToDevice();
+        tnn4.testBackwardOutputLayer(true, csvTestData[0], testLabels[0]);
     }
     
 

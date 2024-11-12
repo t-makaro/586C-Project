@@ -125,10 +125,10 @@ __device__ void multiply_elementwise(const float* A, const float* B, int N, floa
     }
 }
 
-__device__ void cost_derivative(const float* last_activation, const int label, float* result)
+__device__ void cost_derivative(const float* last_activation, const int label, const int outLayerLength, float* result)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if(i < 10)
+    if(i < outLayerLength) // outLayerLength is always 10 (for the 10 digits)
     {
         if (i == label) {
             result[i] = -1.0f / (last_activation[i] + FLT_EPSILON);
@@ -214,15 +214,27 @@ __global__ void global_forwardLayer_zsi(const float* W, const float* b, const fl
 }
 
 
-__global__ void global_backwardLayer_output(const float* outActivation, const float* inActivation, float* bias_output, float* weight_output, float* zsi, float* zstemp, float* delta, int testLabel, int outLayerLength, int inLayerLength)
+__global__ void global_backwardLayer_output(const float* outActivation, float* bias_output, float* zsi, float* zstemp, float* delta,const int* d_testLabel, int outLayerLength)
 {
     // TODO
     // Output layer of backward propagation. Running Cost Derivative
     // For our problem, this outLayerLength can be hardcoded as 10
-    cost_derivative(outActivation, testLabel, delta); // Keep in mind we are moving backwards. outActivation is the out layer and inActivation is the input layer.
+    cost_derivative(outActivation, *d_testLabel, outLayerLength, delta); // Keep in mind we are moving backwards. outActivation is the output layer and inActivation is the input layer.
     d_sigmoid_non_inplace(zsi, outLayerLength, zstemp);
     multiply_elementwise(zstemp, delta, outLayerLength, bias_output);
-    outer_product(bias_output, inActivation, inLayerLength, outLayerLength, weight_output);
+    // Outer product has to be called from another global kernel. It will need all blocks to finish calculating bias_output
+
+    // __syncthreads() // will not work here as the number of threads we are launching here is more than the capacity of a block! 
+    // outer_product(bias_output, inActivation, outLayerLength, inLayerLength, weight_output);
+
+    // Do the first 3 device kernels need this treatment? No.
+    // zsi is not changed. delta is changed but it's only changed in place by the same thread (i.e. delta[i] will only be changed by the same thread that operated zstemp[i], so we can ensure zstemp's value is safe
+    // but it's not safe for outer_product! That kernel uses all the bias_outputs!
+}
+
+__global__ void global_outer_product(const float* bias_output, const float* inActivation, float* weight_output, int outLayerLength, int inLayerLength)
+{
+    outer_product(bias_output, inActivation, outLayerLength, inLayerLength, weight_output);
 }
 
 __global__ void global_test_kernel_matTranMul(const float* mat, const float* vec, int M, int N, float* res)
@@ -478,28 +490,29 @@ void cu_utility::cuForwardLayerWithZs(const float* d_W, const float* d_b, const 
 }
 
 
-std::vector<float>& cu_utility::cuBackwardOutputLayer(std::vector<float>& outActivation,
-                                                      std::vector<float>& inActivation, std::vector<float>& bias_output, std::vector<std::vector<float>>& weight_output,
-                                                      std::vector<float>& zsi, std::vector<float>& delta, int testLabel)
+void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActivation,
+    float* d_bias_output, float* d_weight_output,
+    float* d_zsi, float* d_delta, const int* d_testLabel, int outSize, int inSize)
 {
-    size_t M = outActivation.size();
-    size_t N = delta.size(); // or inActivation size
+    // OutSize == 10 (the digits), inSize == 300 (layer[2])
     size_t f_size = sizeof(float);
-    if(N != 10)
+    if(outSize != 10)
     {
         std::cerr << "Output layer should have an output size of 10!";
     }
     // TODO: Malloc
-    float* d_out, * d_in, * d_bias, * d_weight, * d_zsi, * d_zstemp, *d_delta;
-    
-    cudaMalloc(&d_zstemp, N * f_size);
+    float* d_zstemp;
+    cudaMalloc(&d_zstemp, f_size * outSize);
+    cudaMemset(d_zstemp, 0, f_size * outSize);
+	
 
     // Launch the kernel
     int threadsPerBlock = 256;
-    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+    int blocksPerGrid = (inSize + threadsPerBlock - 1) / threadsPerBlock;
 
-    global_backwardLayer_output << <blocksPerGrid, threadsPerBlock >> > (d_out, d_in, d_bias, d_weight, d_zsi, d_zstemp, d_delta, testLabel, M, N);
-    return delta;
+    global_backwardLayer_output << <blocksPerGrid, threadsPerBlock >> > (d_outActivation, d_bias_output, d_zsi, d_zstemp, d_delta, d_testLabel, outSize);
+    cudaDeviceSynchronize();
+    global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_weight_output, outSize, inSize);
 }
 
 float* cu_utility::copyDataToDevice(Matrix& X) {
@@ -586,7 +599,8 @@ void cu_utility::testOuterProductAndTranspose(const std::vector<float>& a, const
 
 void cu_utility::printVector(const std::vector<float>& v, const int& rowLength)
 {
-    for(int i = 0; i < v.size(); i++)
+    size_t cutoff = v.size() > 300 ? 300 : v.size();
+    for(int i = 0; i < cutoff; i++)
     {
 	    if(rowLength > 0 && i % rowLength == 0)
 	    {

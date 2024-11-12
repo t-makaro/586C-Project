@@ -118,8 +118,10 @@ void CUNN::testForwardZ(bool isGpu, Vector &testData)
         int N = layers[i - 1];
         int M = layers[i];
         cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i], d_activations[i], M, N);
+        cudaDeviceSynchronize();
         cudaMemcpy(zs[i].data(),d_zs[i], zs[i].size() * sizeof(float), cudaMemcpyDeviceToHost);
         deviceFree();
+        cudaFree(d_test);
     }
     else
     {
@@ -127,7 +129,80 @@ void CUNN::testForwardZ(bool isGpu, Vector &testData)
 	    forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
         sigmoid(zs[i], activations[i]);
     }
-    cu_utility::printVector(zs[i], 10); // Breakpoint here to see
+    //cu_utility::printVector(zs[i], 10); // Breakpoint here to see
+}
+
+void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
+{
+    //testForwardZ(isGPU, testData);
+
+    zs.reserve(numLayers);
+    for (int i = 0; i < numLayers; i++) {
+        activations.push_back(Vector(layers[i], 0.0));
+        zs.push_back(Vector(layers[i], 0.0));
+        if (i < numLayers - 1) {
+            dWeights.push_back(Matrix(layers[i + 1], Vector(layers[i], 0.0)));
+            dBiases.push_back(Vector(layers[i + 1], 0.0));
+        }
+    }
+    activations[0] = testData;
+
+    Vector dBiases_tOutput(10, 0);
+    Matrix dWeights_tOuput(10, Vector(300, 0));
+    Vector dWeights_tFlattened(3000, 0);
+    if(isGPU)
+    {
+        float* d_test;
+        size_t s = testData.size() * sizeof(float);
+        cudaMalloc(&d_test, s);
+        cudaMemcpy(d_test, testData.data(), s, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_activations[0], d_test, s, cudaMemcpyDeviceToDevice);
+        for (int i = 1; i < numLayers; i++)
+        {
+            int N = layers[i - 1];
+            int M = layers[i];
+            cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i], d_activations[i], M, N);
+            cudaDeviceSynchronize();
+            cudaMemcpy(zs[i].data(), d_zs[i], zs[i].size() * sizeof(float), cudaMemcpyDeviceToHost);
+        }
+        
+        //cu_utility::printVector(zs[numLayers - 1], 10); // zs is correct
+        std::vector<float*> d_delta = allocate_like_biases(); // delta.size = zsi.size for each layer i.e. like weight
+        float* d_biasOutput, * d_weightOutput;
+        int* d_testLabel;
+        size_t f_size = sizeof(float);
+        cudaMalloc(&d_biasOutput, f_size * 10);
+        cudaMalloc(&d_weightOutput, f_size * 3000);
+        cudaMalloc(&d_testLabel, sizeof(int));
+        cudaMemcpy(d_testLabel, &testLabel,sizeof(int), cudaMemcpyHostToDevice);
+        cu_utility::cuBackwardOutputLayer(d_activations[numLayers - 1], d_activations[numLayers - 2], d_biasOutput, d_weightOutput,
+            d_zs[numLayers - 1], d_delta[numLayers - 2], d_testLabel, layers[3], layers[2]);
+        cudaMemcpy(dBiases_tOutput.data(), d_biasOutput, f_size * 10, cudaMemcpyDeviceToHost);
+        cudaMemcpy(dWeights_tFlattened.data(), d_weightOutput, f_size * 3000, cudaMemcpyDeviceToHost);
+        cudaDeviceSynchronize();
+        cu_utility::printVector(dWeights_tFlattened, 10);
+        cudaFree(d_biasOutput);
+        cudaFree(d_weightOutput);
+        cudaFree(d_testLabel);
+    }
+    else
+    {
+        for (int i = 1; i < numLayers; i++) {
+            forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
+            sigmoid(zs[i], activations[i]);
+        }
+        // Run full forward z pass then run one layer of backwards
+        //cu_utility::printVector(zs[numLayers - 1], 10);
+        Vector delta(10, 0);
+        cost_derivative(activations[numLayers - 1], testLabel, delta);
+        Vector z_temp = Vector(zs[numLayers - 1].size(), 0);
+        d_sigmoid(zs[numLayers - 1], z_temp);
+        multiply_elementwise(z_temp, delta, dBiases_tOutput);
+        outer_product(dBiases_tOutput, activations[numLayers - 2],
+            dWeights_tOuput);
+        cu_utility::printVector(dWeights_tOuput[0], 10);
+    }
+    //cu_utility::printVector(dBiases_tOutput, 10);
 }
 
 void CUNN::copyWeights(const std::vector<Matrix> weights) {
@@ -237,7 +312,6 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     for (int i = 0; i < batchSize; i++) {
         std::vector<float*> d_dWeights = allocate_like_weights();
         std::vector<float*> d_dBiases = allocate_like_biases();
-        
         backwards(d_dWeights, d_dBiases, d_batch+i*dataLen, d_labels+i, dataLen);
         for (int j = 0; j < numLayers-1; j++) {
             cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[j + 1] * layers[j], 1.0 / batchSize);
@@ -261,13 +335,15 @@ void CUNN::backwards(std::vector<float*> &dWeights_output,
     const float* testData, const int* testLabel, size_t dataLen) {
 
     cudaMemcpy(d_activations[0], testData, dataLen, cudaMemcpyDeviceToDevice);// activations[0] = testData;
+    std::vector<float*> d_delta = allocate_like_biases(); // delta.size = zsi.size for each layer i.e. like weight
+
     for (int i = 1; i < numLayers; i++) {
         int M = layers[i - 1];
         int N = layers[i];
-        //forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
-        //sigmoid(zs[i], activations[i]);
         cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i],d_activations[i], M, N);
     }
+    cu_utility::cuBackwardOutputLayer(d_activations[numLayers - 1], d_activations[numLayers - 2], dBiases_output[numLayers - 2], dWeights_output[numLayers - 2], 
+        d_zs[numLayers - 1], d_delta[numLayers - 1], testLabel, layers[3], layers[2]);
     return;
     Vector delta;
     for (int i = 0; i < numLayers - 1; i++) {
@@ -284,10 +360,10 @@ void CUNN::cost_derivative(const Vector& last_activation, const int label,
     Vector& result) {
     for (int i = 0; i < 10; i++) {
         if (i == label) {
-            result[i] = -1 / last_activation[i];
+            result[i] = -1.0f / (last_activation[i] + FLT_EPSILON);
         }
         else {
-            result[i] = 1 / (1 - last_activation[i]);
+            result[i] = 1.0f / (1.0f - last_activation[i] + FLT_EPSILON);
         }
     }
     return;
@@ -458,4 +534,12 @@ Vector& CUNN::sigmoid(const Vector& x, Vector& result) {
 Vector& CUNN::sigmoid(Vector& x) { return cu_utility::cuSigmoid(x); }
 
 Vector& CUNN::d_sigmoid(Vector& x) { return cu_utility::cuDSigmoid(x); }
+
+Vector& CUNN::d_sigmoid(const Vector& x, Vector& y) {
+    assert(x.size() == y.size());
+    for (int i = 0; i < x.size(); i++) {
+        y[i] = d_sigmoid(x[i]);
+    }
+    return y;
+}
 

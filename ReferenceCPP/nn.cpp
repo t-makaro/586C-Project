@@ -95,14 +95,15 @@ void NN::backwards(std::vector<Matrix> &dWeights_output, std::vector<Vector> &dB
     forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
     sigmoid(zs[i], activations[i]);
   }
-  Vector delta(10,0);
+  // delta's length is implicitly changed in the activation derivative functions to size of previous layer
+  Vector delta(10,0); 
   for (int i = 0; i < numLayers-1; i++){
     if (i==0){
         // Output layer
       cost_derivative(activations[numLayers-1], testLabel, delta);
     }
     else{
-      activation_derivative(weights[weights.size() - i], zs[zs.size() - i], delta);
+      activation_derivative(weights[weights.size() - i], zs[numLayers - i], delta);
     }
     Vector z_temp = Vector(zs[numLayers - 1 - i].size(), 0);
     d_sigmoid(zs[numLayers - 1 - i], z_temp);

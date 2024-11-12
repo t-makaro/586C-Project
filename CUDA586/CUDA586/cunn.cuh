@@ -28,6 +28,7 @@ public:
 
     void copyParametersToDevice();
     void testForwardZ(bool isGpu, Vector &testData);
+    void testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel);
     void setBatchSizeDevice(int batchSize);
 
 protected:
@@ -71,6 +72,7 @@ private:
         const float scale);
     static Vector& sigmoid(Vector& x);
     static Vector& d_sigmoid(Vector& x);
+    Vector& d_sigmoid(const Vector& x, Vector& y);
     Vector& sigmoid(const Vector& x, Vector& result);
     static Vector& forwardLayer(const Matrix& w, const Vector& b,
         const Vector& a, Vector& result);

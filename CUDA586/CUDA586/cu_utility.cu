@@ -12,8 +12,8 @@ __device__ void vectorAdd(const float* A, const float* B, float* C, int N) {
 // in-place
 // W of shape MxN, b of shape 1xN
 __device__ void matAddVec(float* WX, const float* b, int M, int N) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (i < M && j < N) {
 		WX[i * N + j] += b[j];
@@ -33,8 +33,8 @@ __device__ void matMulVec(const float* W, const float* X, float* Y, int M,
 }
 
 __device__ void matMul(const float* W, const float* X, float* result, int M, int N, int K) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (i < M && j < K) {
         float tmp = 0.0;
@@ -53,6 +53,15 @@ __device__ void sigmoid(float* A, int N) {
     if (i < N) {
         A[i] = sigmoid(A[i]);
     }
+}
+
+__device__ void sigmoidMat(float* A, int M, int N) {
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if (i < M && j < N) {
+		A[i * N + j] = sigmoid(A[i * N + j]);
+	}
 }
 
 __device__ float d_sigmoid(float a) {
@@ -253,6 +262,25 @@ __global__ void global_matTranMul(const float* mat, const float* vec, int M, int
     transposeMultiply(mat, vec, res, M, N);
 }
 
+__global__ void global_forwardLayerBatch(const float* W, const float* b, const float* A, float* result, int M, int N, int batchSize)
+{
+	//matMul(W, A, result, M, N, batchSize);
+	//matAddVec(result, b, M, batchSize);
+	//sigmoidMat(result, M, batchSize);
+
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
+
+    // multiply, add, sigmoid
+	if (i < M && j < batchSize) {
+		float tmp = 0.0;
+		for (int k = 0; k < N; k++) {
+			tmp += W[i * N + k] * A[k * batchSize + j];
+		}
+		result[i * batchSize + j] = tmp + b[i];
+		result[i * batchSize + j] = sigmoid(result[i * batchSize + j]);
+	}
+}
 
 
 cu_utility::cu_utility(/* args */) {}
@@ -736,22 +764,26 @@ std::vector<std::vector<float>>& cu_utility::cuForwardBatch(
 	float* d_predictions;
 	cudaMalloc(&d_predictions, result.size() * result[0].size() * sizeof(float));
 
-    dim3 gridDim(CEIL_DIV(M, 32), CEIL_DIV(N, 32), 1);
     dim3 blockDim(32, 32, 1);
 
 	cudaDeviceSynchronize();
     for (int i = 0; i < M; i += batchSize) {
 		const float* d_x = d_X + i * N;
-		//global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[0], d_biases[0], d_x, d_activations_batch[1], layers[1], layers[0], batchSize);
+		//dim3 gridDim = dim3(CEIL_DIV(784, 32), CEIL_DIV(784, 32), 1);
+		dim3 gridDim(CEIL_DIV(batchSize, 32), CEIL_DIV(784, 32), 1);
+
+		global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[0], d_biases[0], d_x, d_activations_batch[1], layers[1], layers[0], batchSize);
         cudaDeviceSynchronize();
         for (int layer = 2; layer < layers.size(); layer++) {
+			gridDim = dim3(CEIL_DIV(batchSize, 32), CEIL_DIV(layers[layer], 32), 1);    
+			//gridDim = dim3(CEIL_DIV(layers[layer], 32), CEIL_DIV(batchSize, 32), 1);
             // Launch the kernel
             if (layer == layers.size() - 1) {
                 // use predictions pointer
-				//global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_predictions + i * result[0].size(), layers[layer], layers[layer - 1], batchSize);
+				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_predictions + i * result[0].size(), layers[layer], layers[layer - 1], batchSize);
             }
             else {
-				//global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_activations_batch[layer], layers[layer], layers[layer - 1], batchSize);
+				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_activations_batch[layer], layers[layer], layers[layer - 1], batchSize);
             }
             cudaDeviceSynchronize();
         }   

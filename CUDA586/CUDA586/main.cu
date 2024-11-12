@@ -4,7 +4,7 @@
 #include "utility.h"
 #include "cu_utility.cuh"
 #include "cunn.cuh"
-
+#define TEST_FORWARD true;
 int main() {
     // TEST CASES
     std::vector<float> t_a = {1.f, 2.f, 3.f};
@@ -23,14 +23,16 @@ int main() {
      CUNN nn(layers);
 
   //Util 0: Read Train Data
-    vector<int> trainLabels;
-    trainLabels.reserve(60000);
-    std::cout << "Reading train data..." << std::endl;
-    auto csvTrainData = utility::ReadDatasetCSV("../../data/train.csv", trainLabels);
-    std::cout << "done." << std::endl;
-    std::cout << "Training data size: " << csvTrainData.size() << "x"
-            << csvTrainData[0].size() << std::endl;
-    std::cout << "Training labels size: " << trainLabels.size() << std::endl;
+#if TEST_FORWARD
+     vector<int> trainLabels;
+     trainLabels.reserve(60000);
+     std::cout << "Reading train data..." << std::endl;
+     auto csvTrainData = utility::ReadDatasetCSV("../../data/train.csv", trainLabels);
+     std::cout << "done." << std::endl;
+     std::cout << "Training data size: " << csvTrainData.size() << "x"
+         << csvTrainData[0].size() << std::endl;
+     std::cout << "Training labels size: " << trainLabels.size() << std::endl;
+#endif
 
   // Util 1: Read Test Data
     vector<int> testLabels;
@@ -104,7 +106,6 @@ int main() {
     //std::cout << "All values are correct!\n";
 
     // TNN 1: Forward Z Test
-#define FORWARD_TEST false
 
     CUNN tnn1(layers);
     CUNN tnn2(layers);
@@ -112,10 +113,10 @@ int main() {
     tnn1.copyWeights({ weights_a1, weights_a2, weights_o });
     tnn2.copyBiases({ biases_a1, biases_a2, biases_o });
     tnn2.copyWeights({ weights_a1, weights_a2, weights_o });
-#if FORWARD_TEST
-    tnn2.copyParametersToDevice();
-    tnn1.testForwardZ(false, csvTestData[0]);
-    tnn2.testForwardZ(true, csvTestData[0]);
+#if TEST_FORWARD
+    //tnn2.copyParametersToDevice();
+    //tnn1.testForwardZ(false, csvTestData[0]);
+    //tnn2.testForwardZ(true, csvTestData[0]);
 #endif
 
 #define BACK_TEST true
@@ -144,6 +145,9 @@ int main() {
     
 
 
+
+
+#if TEST_FORWARD
     // NN 1: Copy Weights and Biases and Data
     std::cout << "Copying Parameters and Data to the GPU" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
@@ -168,16 +172,18 @@ int main() {
     std::cout << "done." << std::endl;
     std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
 
-	nn.setBatchSizeDevice(1);
+    nn.setBatchSizeDevice(1);
 
     // NN 2: Forward Pass Training Set
-	std::cout << "Evaluating on training set" << std::endl;
+    std::cout << "Evaluating on training set" << std::endl;
     nn.evaluate(csvTrainData, trainLabels);
-	//nn.evaluate(d_trainData, trainLabels);
+    //nn.evaluate(d_trainData, trainLabels);
 
-	std::cout << "Evaluating on training set (Batched)" << std::endl;
+    std::cout << "Evaluating on training set (Batched)" << std::endl;
     //nn.evaluate(csvTrainData, trainLabels);
-	nn.evaluate(d_trainData, trainLabels);
+    nn.evaluate(d_trainData, trainLabels);
+#endif
+
 
 
     // NN 3: Forward Pass Test Set

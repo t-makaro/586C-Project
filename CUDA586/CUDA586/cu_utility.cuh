@@ -32,8 +32,8 @@ public:
 	static void cuForwardLayerWithZs(const float* d_W, const float* d_b, const float* d_x, float* d_zsi, float* d_y, int M, int N);
 	static void cuBackwardOutputLayer(float* d_outActivation, float* d_inActivation,
 		float* d_bias_output, float* d_weight_output,
-		float* d_zsi, float* d_delta, const int* d_testLabel, int outSize, int inSize);
-	void cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input,
+		float* d_zsi, float* d_delta, const int* d_testLabel, int inSize, int outSize);
+	static void cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input,
 	                            float* d_dWeight_output,
 	                            float* d_zsi_in, float* d_zsi_out, float* d_delta_in, float* d_delta_out, int inSize,
 	                            int outSize);

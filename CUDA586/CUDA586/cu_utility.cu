@@ -1,5 +1,7 @@
 #include "cu_utility.cuh"
 
+#include "utility.h"
+
 // Device Kernels
 
 __device__ void vectorAdd(const float* A, const float* B, float* C, int N) {
@@ -531,7 +533,7 @@ void cu_utility::cuForwardLayerWithZs(const float* d_W, const float* d_b, const 
 
 void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActivation,
     float* d_bias_output, float* d_weight_output,
-    float* d_zsi, float* d_delta, const int* d_testLabel, int outSize, int inSize)
+    float* d_zsi, float* d_delta, const int* d_testLabel, int inSize, int outSize)
 {
     // OutSize == 10 (the digits), inSize == 300 (layer[2])
     size_t f_size = sizeof(float);
@@ -548,43 +550,47 @@ void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActiva
 
     // Launch the kernel
     int threadsPerBlock = 256;
-    int blocksPerGrid = (inSize + threadsPerBlock - 1) / threadsPerBlock;
 
+    int blocksPerGrid = (outSize + threadsPerBlock - 1) / threadsPerBlock;
     global_backwardLayer_output << <blocksPerGrid, threadsPerBlock >> > (d_outActivation, d_bias_output, d_zsi, d_zstemp, d_delta, d_testLabel, outSize);
     cudaDeviceSynchronize();
+    blocksPerGrid = (inSize * outSize + threadsPerBlock - 1) / threadsPerBlock;
     global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_weight_output, outSize, inSize);
 
     cudaFree(d_zstemp);
 }
 
-void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input, float* d_dWeight_output, float* d_zsi_in, float* d_zsi_out, float* d_delta_in, float* d_delta_out,int inSize, int outSize)
+void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input,
+	float* d_dWeight_output, float* d_zsi_in, float* d_zsi_out, float* d_delta_in, float* d_delta_out, int inSize,
+	int outSize)
 {
-	// TODO
+    // TODO
     size_t f_size = sizeof(float);
 
-    float* d_zstemp_o , *d_zstemp_i;
+    float* d_zstemp_o, * d_zstemp_i;
     cudaMalloc(&d_zstemp_o, f_size * outSize);
     cudaMalloc(&d_zstemp_i, f_size * inSize);
     cudaMemset(d_zstemp_o, 0, f_size * outSize);
     cudaMemset(d_zstemp_i, 0, f_size * inSize);
     // Launch the kernel
     int threadsPerBlock = 256;
-    int blocksPerGrid = (inSize + threadsPerBlock - 1) / threadsPerBlock;
-    // in layer = numLayer-2-i in reference, out layer = numLayer-1-i in reference (for weight, bias and delta, not for zs / zs is allocated like activation)
-    
-    // activation_derivative
-    global_d_sigmoid_multiply_elementwise_delta << <blocksPerGrid, threadsPerBlock >> > (d_zsi_out, d_delta_out, d_delta_out, d_zstemp_o, outSize);
 
+    // in layer = numLayer-2-i in reference, out layer = numLayer-1-i in reference (for weight, bias and delta, not for zs / zs is allocated like activation)
+
+    // activation_derivative
+    int blocksPerGrid = (outSize + threadsPerBlock - 1) / threadsPerBlock;
+    global_d_sigmoid_multiply_elementwise_delta << <blocksPerGrid, threadsPerBlock >> > (d_zsi_out, d_delta_out, d_delta_out, d_zstemp_o, outSize);
     cudaDeviceSynchronize();
+    blocksPerGrid = (inSize * outSize + threadsPerBlock - 1) / threadsPerBlock;
     global_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_weight_input, d_delta_out, outSize, inSize, d_delta_in);
-    
     // d_sigmoid_multiply
     cudaDeviceSynchronize();
+    blocksPerGrid = (inSize + threadsPerBlock - 1) / threadsPerBlock;
     global_d_sigmoid_multiply_elementwise_delta << <blocksPerGrid, threadsPerBlock >> > (d_zsi_in, d_bias_output, d_delta_in, d_zstemp_i, inSize);
     // outer product
     cudaDeviceSynchronize();
+    blocksPerGrid = (inSize * outSize + threadsPerBlock - 1) / threadsPerBlock;
     global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_dWeight_output, outSize, inSize);
-    
 }
 
 float* cu_utility::copyDataToDevice(Matrix& X) {

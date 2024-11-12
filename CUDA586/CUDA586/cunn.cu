@@ -342,13 +342,12 @@ void CUNN::backwards(std::vector<float*> &dWeights_output,
         int N = layers[i];
         cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i],d_activations[i], M, N);
     }
-    cu_utility::cuBackwardOutputLayer(d_activations[numLayers - 1], d_activations[numLayers - 2], dBiases_output[numLayers - 2], dWeights_output[numLayers - 2], 
-        d_zs[numLayers - 1], d_delta[numLayers - 1], testLabel, layers[3], layers[2]);
-    return;
+    
     Vector delta;
     for (int i = 0; i < numLayers - 1; i++) {
         if (i == 0) {
-
+            cu_utility::cuBackwardOutputLayer(d_activations[numLayers - 1], d_activations[numLayers - 2], dBiases_output[numLayers - 2], dWeights_output[numLayers - 2],
+                d_zs[numLayers - 1], d_delta[numLayers - 2], testLabel, layers[3], layers[2]);
         }
         else {
 

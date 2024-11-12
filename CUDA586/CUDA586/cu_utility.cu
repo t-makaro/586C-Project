@@ -143,8 +143,10 @@ __device__ void cost_derivative(const float* last_activation, const int label, c
 __device__ void activation_derivative(const float* d_weight, float* d_zsi, float* d_zstemp, float* d_prev_delta, float* d_new_delta, int inLayerLength, int outLayerLength)
 {
 	// TODO
+    // Safe, in-place operation
     d_sigmoid_non_inplace(d_zsi, outLayerLength, d_zstemp);
     multiply_elementwise(d_zstemp, d_prev_delta, outLayerLength, d_prev_delta);
+    // Might need to use the global kernel to sync...
     transposeMultiply(d_weight, d_prev_delta, d_new_delta, outLayerLength, inLayerLength);
 }
 
@@ -239,7 +241,14 @@ __global__ void global_outer_product(const float* bias_output, const float* inAc
     outer_product(bias_output, inActivation, outLayerLength, inLayerLength, weight_output);
 }
 
-__global__ void global_test_kernel_matTranMul(const float* mat, const float* vec, int M, int N, float* res)
+__global__ void global_d_sigmoid_multiply_elementwise_delta(float* d_zsi, float* d_new, float* d_delta, float* d_zstemp, int outLayerLength)
+{
+	// Perform a d_sigmoid_non_inplace then multiply elementwise.
+    d_sigmoid_non_inplace(d_zsi, outLayerLength, d_zstemp);
+    multiply_elementwise(d_zstemp, d_delta, outLayerLength, d_new);
+}
+
+__global__ void global_matTranMul(const float* mat, const float* vec, int M, int N, float* res)
 {
     transposeMultiply(mat, vec, res, M, N);
 }
@@ -503,7 +512,7 @@ void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActiva
         std::cerr << "Output layer should have an output size of 10!";
         return;
     }
-    // TODO: Malloc
+
     float* d_zstemp;
     cudaMalloc(&d_zstemp, f_size * outSize);
     cudaMemset(d_zstemp, 0, f_size * outSize);
@@ -516,12 +525,39 @@ void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActiva
     global_backwardLayer_output << <blocksPerGrid, threadsPerBlock >> > (d_outActivation, d_bias_output, d_zsi, d_zstemp, d_delta, d_testLabel, outSize);
     cudaDeviceSynchronize();
     global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_weight_output, outSize, inSize);
+
+    cudaFree(d_zstemp);
 }
 
-//void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input, float* d_dWeight_output, float* d_zsi, float* d_delta, int inSize, int outSize)
-//{
-//	// TODO
-//}
+void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input, float* d_dWeight_output, float* d_zsi_in, float* d_zsi_out, float* d_delta_in, float* d_delta_out,int inSize, int outSize)
+{
+	// TODO
+    size_t f_size = sizeof(float);
+
+    float* d_zstemp_o , *d_zstemp_i;
+    cudaMalloc(&d_zstemp_o, f_size * outSize);
+    cudaMalloc(&d_zstemp_i, f_size * inSize);
+    cudaMemset(d_zstemp_o, 0, f_size * outSize);
+    cudaMemset(d_zstemp_i, 0, f_size * inSize);
+    // Launch the kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (inSize + threadsPerBlock - 1) / threadsPerBlock;
+    // in layer = numLayer-2-i in reference, out layer = numLayer-1-i in reference (for weight, bias and delta, not for zs / zs is allocated like activation)
+    
+    // activation_derivative
+    global_d_sigmoid_multiply_elementwise_delta << <blocksPerGrid, threadsPerBlock >> > (d_zsi_out, d_delta_out, d_delta_out, d_zstemp_o, outSize);
+
+    cudaDeviceSynchronize();
+    global_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_weight_input, d_delta_out, outSize, inSize, d_delta_in);
+    
+    // d_sigmoid_multiply
+    cudaDeviceSynchronize();
+    global_d_sigmoid_multiply_elementwise_delta << <blocksPerGrid, threadsPerBlock >> > (d_zsi_in, d_bias_output, d_delta_in, d_zstemp_i, inSize);
+    // outer product
+    cudaDeviceSynchronize();
+    global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_dWeight_output, outSize, inSize);
+    
+}
 
 float* cu_utility::copyDataToDevice(Matrix& X) {
     // flatten X
@@ -587,7 +623,7 @@ void cu_utility::testOuterProductAndTranspose(const std::vector<float>& a, const
     cudaMemcpy(d_c, c, 3 * sizeof(float), cudaMemcpyHostToDevice);
     // Desired Output
     // 28 35 42 49
-    global_test_kernel_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_outer, d_c, 3, 4, d_res); // Note that you have to input the TRANSPOSED LENGTH of the matrix!
+    global_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_outer, d_c, 3, 4, d_res); // Note that you have to input the TRANSPOSED LENGTH of the matrix!
     // Or TLDR: M = d_c.size(), N = d_res.size()
 
     outer.resize(matrix_len);

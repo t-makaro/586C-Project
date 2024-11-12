@@ -42,12 +42,12 @@ int main() {
 
     // NN 2: Forward Pass Training Set
 
-    std::cout << "Evaluate accuracy over training data" << std::endl;
+    std::cout << "Evaluate accuracy over test data before training" << std::endl;
     nn.evaluate(csvTestData, testLabels);
 
     // NN 3: Train on the training set
 
-    std::cout << "Starting training..." << std::endl;
+    std::cout << "Starting training on 60k images..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
     nn.train(csvTrainData, trainLabels, 1, 10, 0.1);
 
@@ -56,8 +56,21 @@ int main() {
     std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
 
     // NN 4: Forward Pass Test Set
-    std::cout << "Evaluate accuracy over test data" << std::endl;
+    std::cout << "Evaluate accuracy over test data after training" << std::endl;
     nn.evaluate(csvTestData, testLabels);
+
+    std::cout << "Evaluate accuracy over training data" << std::endl;
+    nn.evaluate(csvTrainData, trainLabels);
+
+    // NN 5: Train on the test set just for timing comparison
+
+    std::cout << "Starting training on 10k images..." << std::endl;
+    start = std::chrono::high_resolution_clock::now();
+    nn.train(csvTestData, testLabels, 1, 10, 0.1);
+
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
 
     return 0;
 }

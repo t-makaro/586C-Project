@@ -169,30 +169,18 @@ int main() {
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    std::cout << "done." << std::endl;
-    std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
+    std::cout << "\tdone." << std::endl;
+    std::cout << "\tElapsed time: " << elapsed.count() << " seconds." << std::endl;
 
-    nn.setBatchSizeDevice(60000);
+    int forwardBatchSize = 1;
+    nn.setBatchSizeDevice(forwardBatchSize);
 
     // NN 2: Forward Pass Training Set
-    std::cout << "Evaluating on training set" << std::endl;
-    nn.evaluate(csvTrainData, trainLabels);
-    //nn.evaluate(d_trainData, trainLabels);
-
-    std::cout << "Evaluating on training set (Batched)" << std::endl;
-    //nn.evaluate(csvTrainData, trainLabels);
+    std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_trainData, trainLabels);
 
-
-
-
     // NN 3: Forward Pass Test Set
-    std::cout << "Evaluating on test set" << std::endl;
-    nn.evaluate(csvTestData, testLabels);
-	//nn.evaluate(d_testData, testLabels);
-
-    std::cout << "Evaluating on test set (Batched)" << std::endl;
-    //nn.evaluate(csvTestData, testLabels);
+    std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
 	nn.evaluate(d_testData, testLabels);
 
 

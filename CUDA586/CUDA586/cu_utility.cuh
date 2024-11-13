@@ -36,7 +36,7 @@ public:
 	static void cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input,
 	                            float* d_dWeight_output,
 	                            float* d_zsi_in, float* d_zsi_out, float* d_delta_in, float* d_delta_out, int inSize,
-	                            int outSize);
+	                            int outSize, int deltaSize);
 
 
 	static std::vector<std::vector<float>>& cuForward(

@@ -4,7 +4,7 @@
 #include "utility.h"
 #include "cu_utility.cuh"
 #include "cunn.cuh"
-#define TEST_FORWARD true;
+#define TEST_FORWARD false;
 int main() {
     // TEST CASES
     std::vector<float> t_a = {1.f, 2.f, 3.f};
@@ -182,7 +182,7 @@ int main() {
     std::cout << "Evaluating on training set (Batched)" << std::endl;
     //nn.evaluate(csvTrainData, trainLabels);
     nn.evaluate(d_trainData, trainLabels);
-#endif
+
 
 
 
@@ -204,7 +204,7 @@ int main() {
     cudaFree(d_trainLabels);
     cudaFree(d_testData);
     cudaFree(d_testLabels);
-
+#endif
     // cudaDeviceReset must be called before exiting in order for profiling and
     // tracing tools such as Nsight and Visual Profiler to show complete traces.
     cudaError_t cudaStatus = cudaDeviceReset();

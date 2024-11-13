@@ -558,7 +558,7 @@ void cu_utility::cuBackwardOutputLayer(float* d_outActivation, float* d_inActiva
 
 void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_output, float* d_weight_input,
 	float* d_dWeight_output, float* d_zsi_in, float* d_zsi_out, float* d_delta_in, float* d_delta_out, int inSize,
-	int outSize)
+	int outSize, int deltaSize)
 {
     // TODO
     size_t f_size = sizeof(float);
@@ -577,8 +577,8 @@ void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_out
     int blocksPerGrid = (outSize + threadsPerBlock - 1) / threadsPerBlock;
     global_d_sigmoid_multiply_elementwise_delta << <blocksPerGrid, threadsPerBlock >> > (d_zsi_out, d_delta_out, d_delta_out, d_zstemp_o, outSize);
     cudaDeviceSynchronize();
-    blocksPerGrid = (inSize * outSize + threadsPerBlock - 1) / threadsPerBlock;
-    global_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_weight_input, d_delta_out, outSize, inSize, d_delta_in);
+    blocksPerGrid = (deltaSize * outSize + threadsPerBlock - 1) / threadsPerBlock;
+    global_matTranMul << <blocksPerGrid, threadsPerBlock >> > (d_weight_input, d_delta_out, deltaSize, outSize, d_delta_in);
     // d_sigmoid_multiply
     cudaDeviceSynchronize();
     blocksPerGrid = (inSize + threadsPerBlock - 1) / threadsPerBlock;

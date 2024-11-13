@@ -202,13 +202,18 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         cudaMalloc(&d_weightOutput2, f_size * 90000);
         cudaDeviceSynchronize();
         cu_utility::cuBackwardRegularLayer(d_activations[1], d_biasOutput2, d_weights[numLayers-2], d_weightOutput2, d_zs[numLayers - 2], d_zs[numLayers - 1],
-            d_delta[numLayers - 3], d_delta[numLayers - 2], layers[1], layers[2]);
+            d_delta[numLayers - 3], d_delta[numLayers - 2], layers[1], layers[2], layers[3]);
         auto delta_in = Vector(300, 0);
         auto delta_out = Vector(10, 0);
         cudaMemcpy(delta_out.data(), d_delta[numLayers - 2], 10 * f_size, cudaMemcpyDeviceToHost);
         cudaMemcpy(delta_in.data(), d_delta[numLayers - 3], 300 * f_size, cudaMemcpyDeviceToHost);
-        cu_utility::printVector(delta_in, 10);
-        cu_utility::printVector(delta_out, 10); // delta_out is correct, delta_in is wrong, indicating transMul kernel issue
+        //cu_utility::printVector(delta_out, 10); // delta_out is correct, delta_in is wrong, indicating transMul kernel issue
+        //cu_utility::printVector(delta_in, 10);
+        Vector weightVector(3000, 0);
+        cudaMemcpy(weightVector.data(), d_weights[numLayers - 2], 3000 * f_size, cudaMemcpyDeviceToHost);
+
+        Vector sliced_vec(weightVector.begin() + 1200, weightVector.begin() + 1501);
+        cu_utility::printVector(sliced_vec, 10);
 
         cudaDeviceSynchronize();
         cudaMemcpy(dBiases_tOutput2.data(), d_biasOutput2, f_size * 300, cudaMemcpyDeviceToHost);
@@ -236,9 +241,10 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         outer_product(dBiases_tOutput, activations[numLayers - 2],
             dWeights_tOutput);
     	//cu_utility::printVector(dWeights_tOutput[1], 10); // correct
+        cu_utility::printVector(weights[numLayers - 2][4], 10);
 
         activation_derivative(weights[numLayers - 2], zs[numLayers - 1], delta);
-        cu_utility::printVector(delta, 10);
+        //cu_utility::printVector(delta, 10);
         z_temp = Vector(zs[numLayers - 2].size(), 0);
         d_sigmoid(zs[numLayers - 2], z_temp);
         multiply_elementwise(z_temp, delta, dBiases_tOutput2);
@@ -398,7 +404,7 @@ void CUNN::backwards(std::vector<float*> &dWeights_output,
         }
         else {
             cu_utility::cuBackwardRegularLayer(d_activations[numLayers - 2 - i], dBiases_output[numLayers - 2 - i], d_weights[numLayers - i - 1], dWeights_output[numLayers - 2 - i], d_zs[numLayers - i - 1], d_zs[numLayers - i],
-                d_delta[numLayers - 2 - i], d_delta[numLayers - 1 - i], layers[2 - i], layers[3 - i]);
+                d_delta[numLayers - 2 - i], d_delta[numLayers - 1 - i], layers[2 - i], layers[3 - i], layers[4 - i]);
         }
     }
 }

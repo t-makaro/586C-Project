@@ -208,12 +208,12 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         cudaMemcpy(delta_out.data(), d_delta[numLayers - 2], 10 * f_size, cudaMemcpyDeviceToHost);
         cudaMemcpy(delta_in.data(), d_delta[numLayers - 3], 300 * f_size, cudaMemcpyDeviceToHost);
         //cu_utility::printVector(delta_out, 10); // delta_out is correct, delta_in is wrong, indicating transMul kernel issue
-        //cu_utility::printVector(delta_in, 10);
+        cu_utility::printVector(delta_in, 10);
         Vector weightVector(3000, 0);
         cudaMemcpy(weightVector.data(), d_weights[numLayers - 2], 3000 * f_size, cudaMemcpyDeviceToHost);
 
-        Vector sliced_vec(weightVector.begin() + 1200, weightVector.begin() + 1501);
-        cu_utility::printVector(sliced_vec, 10);
+        //Vector sliced_vec(weightVector.begin() + 1200, weightVector.begin() + 1501);
+        //cu_utility::printVector(sliced_vec, 10);
 
         cudaDeviceSynchronize();
         cudaMemcpy(dBiases_tOutput2.data(), d_biasOutput2, f_size * 300, cudaMemcpyDeviceToHost);
@@ -241,10 +241,10 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         outer_product(dBiases_tOutput, activations[numLayers - 2],
             dWeights_tOutput);
     	//cu_utility::printVector(dWeights_tOutput[1], 10); // correct
-        cu_utility::printVector(weights[numLayers - 2][4], 10);
+        //cu_utility::printVector(weights[numLayers - 2][4], 10);
 
         activation_derivative(weights[numLayers - 2], zs[numLayers - 1], delta);
-        //cu_utility::printVector(delta, 10);
+        cu_utility::printVector(delta, 10);
         z_temp = Vector(zs[numLayers - 2].size(), 0);
         d_sigmoid(zs[numLayers - 2], z_temp);
         multiply_elementwise(z_temp, delta, dBiases_tOutput2);

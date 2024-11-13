@@ -179,11 +179,11 @@ int main() {
 
     // NN 2: Forward Pass Training Set
     std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
-    nn.evaluate(d_trainData, trainLabels);
+    nn.evaluate(d_trainData, d_trainLabels, M_train);
 
     // NN 3: Forward Pass Test Set
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
-	nn.evaluate(d_testData, testLabels);
+	nn.evaluate(d_testData, d_testLabels, M_test);
 
     // NN 4: Training Set
     // nn.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);

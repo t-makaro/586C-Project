@@ -521,7 +521,7 @@ float CUNN::evaluate(const float *input, const int* labels, int numExamples)
     std::cout << "\tdone." << std::endl;
     std::cout << "\tElapsed time: " << elapsed.count() << " seconds."
         << std::endl;
-    float accuracy = (float)numCorrect / testLabels.size();
+    float accuracy = (float)numCorrect / numExamples;
     std::cout << "\tAccuracy: " << accuracy << std::endl;
     return accuracy;
 }

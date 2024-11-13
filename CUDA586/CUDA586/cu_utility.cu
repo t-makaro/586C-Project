@@ -766,23 +766,21 @@ std::vector<std::vector<float>>& cu_utility::cuForwardBatch(
 	float* d_predictions;
 	cudaMalloc(&d_predictions, result.size() * result[0].size() * sizeof(float));
 
-    dim3 blockDim(1, 128, 1);
-
+    dim3 blockDim(1, 32, 1);
     for (int i = 0; i < M; i += batchSize) {
 		const float* d_x = d_X + i * N;
 		dim3 gridDim(batchSize, CEIL_DIV(300, blockDim.y), 1);
 
-		global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[0], d_biases[0], d_x, d_activations_batch[1], layers[1], layers[0], batchSize);
-        for (int layer = 2; layer < layers.size(); layer++) {
+        for (int layer = 1; layer < layers.size(); layer++) {
 			gridDim = dim3(batchSize, CEIL_DIV(layers[layer], blockDim.y), 1);    
-            // Launch the kernel
-            if (layer == layers.size() - 1) {
-                // use predictions pointer
-				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_predictions + i * result[0].size(), layers[layer], layers[layer - 1], batchSize);
-            }
-            else {
-				global_forwardLayerBatch << <gridDim, blockDim>> > (d_weights[layer - 1], d_biases[layer - 1], d_activations_batch[layer - 1], d_activations_batch[layer], layers[layer], layers[layer - 1], batchSize);
-            }
+			global_forwardLayerBatch << <gridDim, blockDim>> > (
+                d_weights[layer - 1], 
+                d_biases[layer - 1], 
+				(layer == 1) ? d_x : d_activations_batch[layer - 1],
+				(layer == layers.size() - 1) ? d_predictions + i * result[0].size() : d_activations_batch[layer],
+                layers[layer], 
+                layers[layer - 1], 
+                batchSize);
         }   
     }
 

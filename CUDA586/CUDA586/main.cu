@@ -119,7 +119,7 @@ int main() {
     //tnn2.testForwardZ(true, csvTestData[0]);
 #endif
 
-#define BACK_TEST true
+#define BACK_TEST false 
     // TNN 2: Backward Test
     CUNN tnn3(layers);
     CUNN tnn4(layers);

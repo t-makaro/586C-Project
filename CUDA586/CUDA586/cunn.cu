@@ -22,7 +22,9 @@ CUNN::CUNN(std::vector<int> layers) : layers(layers) {
 	d_activations_batch.resize(numLayers);
 }
 
-CUNN::~CUNN() {}
+CUNN::~CUNN() {
+	deviceFree();
+}
 
 // alloc device weights, biases, activations
 void CUNN::deviceAlloc() {

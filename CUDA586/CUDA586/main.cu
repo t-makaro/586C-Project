@@ -172,7 +172,7 @@ int main() {
     std::cout << "done." << std::endl;
     std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
 
-    nn.setBatchSizeDevice(1);
+    nn.setBatchSizeDevice(60000);
 
     // NN 2: Forward Pass Training Set
     std::cout << "Evaluating on training set" << std::endl;

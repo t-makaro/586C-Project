@@ -4,8 +4,10 @@
 #include "utility.h"
 #include "cu_utility.cuh"
 #include "cunn.cuh"
+
 #define TEST_FORWARD true
 #define BACK_TEST false
+
 int main() {
     // TEST CASES
     std::vector<float> t_a = {1.f, 2.f, 3.f};
@@ -182,7 +184,6 @@ int main() {
     // NN 3: Forward Pass Test Set
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
 	nn.evaluate(d_testData, testLabels);
-
 
     // NN 4: Training Set
     // nn.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);

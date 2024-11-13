@@ -280,6 +280,23 @@ __global__ void global_forwardLayerBatch(const float* W, const float* b, const f
 	}
 }
 
+__global__ void countNumCorrectPredictions(const float* predictions, const int* labels, int* numCorrect, int numExamples, int numClasses) {
+    int i= blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < numExamples) {
+		int maxIndex = 0;
+		float maxVal = predictions[i * numClasses];
+		for (int j = 1; j < numClasses; j++) {
+			float val = predictions[i * numClasses + j];
+			if (val > maxVal) {
+				maxVal = val;
+				maxIndex = j;
+			}
+		}
+		atomicAdd(numCorrect, (maxIndex == labels[i]));
+    }
+}
+
 
 cu_utility::cu_utility(/* args */) {}
 
@@ -752,22 +769,22 @@ std::vector<std::vector<float>>& cu_utility::cuForward(
 
 #define CEIL_DIV(x, y) (((x) + (y) - 1) / (y))
 
-std::vector<std::vector<float>>& cu_utility::cuForwardBatch(
+int cu_utility::cuForwardBatch(
     const std::vector<float*> d_weights, const std::vector<float*> d_biases,
     const std::vector<float*> d_activations_batch, const std::vector<int> layers,
     const float* d_X,
-    int batchSize,
-    std::vector<std::vector<float>>& result
+	const int* d_Y,
+    int numExamples,
+    int batchSize
 ) {
-	int M = result.size();
     int N = 784;
 
     // alloc memory for predictions
 	float* d_predictions;
-	cudaMalloc(&d_predictions, result.size() * result[0].size() * sizeof(float));
+	cudaMalloc(&d_predictions, numExamples * 10 * sizeof(float));
 
     dim3 blockDim(1, 32, 1);
-    for (int i = 0; i < M; i += batchSize) {
+    for (int i = 0; i < numExamples; i += batchSize) {
 		const float* d_x = d_X + i * N;
 		dim3 gridDim(batchSize, CEIL_DIV(300, blockDim.y), 1);
 
@@ -777,26 +794,26 @@ std::vector<std::vector<float>>& cu_utility::cuForwardBatch(
                 d_weights[layer - 1], 
                 d_biases[layer - 1], 
 				(layer == 1) ? d_x : d_activations_batch[layer - 1],
-				(layer == layers.size() - 1) ? d_predictions + i * result[0].size() : d_activations_batch[layer],
+				(layer == layers.size() - 1) ? d_predictions + i * 10 : d_activations_batch[layer],
                 layers[layer], 
                 layers[layer - 1], 
                 batchSize);
         }   
     }
 
-    // Copy result from device to host
-    // predictionts flattened
-	size_t sizePred = M * layers[layers.size() - 1] * sizeof(float);
-	std::vector<float> predictions_flattened(M * layers[layers.size() - 1]);
-	cudaMemcpy(predictions_flattened.data(), d_predictions, sizePred, cudaMemcpyDeviceToHost);
+    // evaluate preds on device
+	int* d_numCorrect;
+	cudaMalloc(&d_numCorrect, sizeof(int));
+	cudaMemset(d_numCorrect, 0, sizeof(int));
 
-	// unflatten predictions
-	for (int i = 0; i < M; i++) {
-		std::copy(predictions_flattened.begin() + i * layers[layers.size() - 1], predictions_flattened.begin() + (i + 1) * layers[layers.size() - 1], result[i].begin());
-	}
+	int threadsPerBlock = 256;
+	int blocksPerGrid = CEIL_DIV(numExamples, threadsPerBlock);
+	countNumCorrectPredictions << <blocksPerGrid, threadsPerBlock >> > (d_predictions, d_Y, d_numCorrect, numExamples, 10);
+
+	int numCorrect;
+	cudaMemcpy(&numCorrect, d_numCorrect, sizeof(int), cudaMemcpyDeviceToHost);
 
 	cudaFree(d_predictions);
-
-	return result;
+	return numCorrect;
 }
 

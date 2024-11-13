@@ -44,16 +44,17 @@ public:
 		const std::vector<float*> d_activations, const std::vector<int> layers,
 		const std::vector<std::vector<float>>& X, std::vector<std::vector<float>>& result
 	);
-	static std::vector<std::vector<float>>& cuForwardBatch(
+	static int cuForwardBatch(
 		const std::vector<float*> d_weights, const std::vector<float*> d_biases,
 		const std::vector<float*> d_activations_batch, const std::vector<int> layers,
 		const float *d_X, 
-		int batchSize,	
-		std::vector<std::vector<float>>& result
+		const int* d_Y,
+		int numExamples,
+		int batchSize
 	);
 	static float* copyDataToDevice(Matrix& X);
-
 	static int* copyDataToDevice(std::vector<int>& X);
+
 	static void testOuterProductAndTranspose(const std::vector<float>& a, const std::vector<float>&b, std::vector<float> &outer, std::vector<float>& transp);
 	static void printVector(const std::vector<float>& v, const int& rowLength);
 

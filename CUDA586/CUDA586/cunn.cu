@@ -508,28 +508,12 @@ float CUNN::evaluate(const Matrix& testData,
     return accuracy;
 }
 
-float CUNN::evaluate(const float* testData, const std::vector<int>& testLabels) {
-    int numCorrect = 0;
-
+float CUNN::evaluate(const float *input, const int* labels, int numExamples)
+{
     // timing
     auto start = std::chrono::high_resolution_clock::now();
-	Matrix predictions(testLabels.size(), Vector(10, 0));
-	cu_utility::cuForwardBatch(d_weights, d_biases, d_activations_batch, layers, testData, batchSize, predictions);
-
-    for (int i = 0; i < predictions.size(); i++) {
-        Vector pred = predictions[i];
-        int maxIndex = 0;
-        float maxVal = 0;
-        for (int j = 0; j < pred.size(); j++) {
-            if (pred[j] > maxVal) {
-                maxVal = pred[j];
-                maxIndex = j;
-            }
-        }
-        if (maxIndex == testLabels[i]) {
-            numCorrect++;
-        }
-    }
+    
+    int numCorrect = cu_utility::cuForwardBatch(d_weights, d_biases, d_activations_batch, layers, input, labels, numExamples, batchSize);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -540,7 +524,6 @@ float CUNN::evaluate(const float* testData, const std::vector<int>& testLabels) 
     float accuracy = (float)numCorrect / testLabels.size();
     std::cout << "\tAccuracy: " << accuracy << std::endl;
     return accuracy;
-
 }
 
 

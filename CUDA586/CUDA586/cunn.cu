@@ -224,6 +224,9 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         cudaFree(d_biasOutput);
         cudaFree(d_weightOutput);
         cudaFree(d_testLabel);
+        cudaFree(d_biasOutput2);
+        cudaFree(d_weightOutput2);
+        cudaFree(d_test);
         
     }
     else

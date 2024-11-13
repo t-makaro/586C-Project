@@ -4,7 +4,8 @@
 #include "utility.h"
 #include "cu_utility.cuh"
 #include "cunn.cuh"
-#define TEST_FORWARD false;
+#define TEST_FORWARD true
+#define BACK_TEST false
 int main() {
     // TEST CASES
     std::vector<float> t_a = {1.f, 2.f, 3.f};
@@ -119,7 +120,6 @@ int main() {
     //tnn2.testForwardZ(true, csvTestData[0]);
 #endif
 
-#define BACK_TEST false 
     // TNN 2: Backward Test
     CUNN tnn3(layers);
     CUNN tnn4(layers);
@@ -137,7 +137,7 @@ int main() {
         tnn4.copyBiases({ biases_a1_i, biases_a2_i, biases_o_i });
         tnn4.copyWeights({ weights_a1_i, weights_a2_i, weights_o_i });
 
-        tnn3.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
+       // tnn3.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
 
         tnn4.copyParametersToDevice();
         tnn4.testBackwardOutputLayer(true, csvTestData[0], testLabels[0]);

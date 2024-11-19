@@ -5,8 +5,8 @@
 #include "cu_utility.cuh"
 #include "cunn.cuh"
 
-#define TEST_FORWARD true
-#define BACK_TEST false
+#define TEST_FORWARD false
+#define BACK_TEST true
 
 int main() {
     // TEST CASES
@@ -139,7 +139,7 @@ int main() {
         tnn4.copyBiases({ biases_a1_i, biases_a2_i, biases_o_i });
         tnn4.copyWeights({ weights_a1_i, weights_a2_i, weights_o_i });
 
-       // tnn3.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
+        tnn3.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
 
         tnn4.copyParametersToDevice();
         tnn4.testBackwardOutputLayer(true, csvTestData[0], testLabels[0]);
@@ -174,7 +174,7 @@ int main() {
     std::cout << "\tdone." << std::endl;
     std::cout << "\tElapsed time: " << elapsed.count() << " seconds." << std::endl;
 
-    int forwardBatchSize = 1;
+    int forwardBatchSize = 2400;
     nn.setBatchSizeDevice(forwardBatchSize);
 
     // NN 2: Forward Pass Training Set

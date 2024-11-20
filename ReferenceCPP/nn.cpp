@@ -210,10 +210,11 @@ void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         //cu_utility::printVector(weights[numLayers - 2][4], 10);
 
         activation_derivative(weights[numLayers - 2], zs[numLayers - 1], delta);
-        utility::printVector(delta, 10);
+        //utility::printVector(delta, 10);
         z_temp = Vector(zs[numLayers - 2].size(), 0);
         d_sigmoid(zs[numLayers - 2], z_temp);
         multiply_elementwise(z_temp, delta, dBiases_tOutput2);
+        utility::printVector(dBiases_tOutput2, 10);
         outer_product(dBiases_tOutput2, activations[1],
             dWeights_tOutput2);
 

@@ -57,4 +57,6 @@ public:
     void transpose(const Matrix& a, Matrix& result);
     Matrix sliceMatrix(const Matrix& matrix, size_t start_row, size_t end_row);
     std::vector<int> sliceVector(const std::vector<int>& vec, size_t start_index, size_t end_index);
+
+    void testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel);
 };

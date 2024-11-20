@@ -15,4 +15,5 @@ public:
         std::vector<int>& results);
     static vector<float> ReadBias(std::string csvPath);
     static vector<vector<float>> ReadWeight(std::string csvPath);
+    static void printVector(const std::vector<float>& v, const int& rowLength);
 };

@@ -45,6 +45,9 @@ int main() {
     std::cout << "Evaluate accuracy over test data before training" << std::endl;
     nn.evaluate(csvTestData, testLabels);
 
+    // NN weird test case for bachwards pass
+    //nn.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
+
     // NN 3: Train on the training set
 
     std::cout << "Starting training on 60k images..." << std::endl;

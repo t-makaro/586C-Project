@@ -1,4 +1,5 @@
 #include "nn.h"
+#include "utility.h"
 
 NN::NN(std::vector<int> layers) : layers(layers) {
     numLayers = layers.size();
@@ -162,6 +163,63 @@ void NN::transpose(const Matrix &a, Matrix &result){
           result[j][i] = a[i][j];
       }
   }
+}
+void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
+{
+    //testForwardZ(isGPU, testData);
+
+    zs.reserve(numLayers);
+    for (int i = 0; i < numLayers; i++) {
+        activations.push_back(Vector(layers[i], 0.0));
+        zs.push_back(Vector(layers[i], 0.0));
+        if (i < numLayers - 1) {
+            dWeights.push_back(Matrix(layers[i + 1], Vector(layers[i], 0.0)));
+            dBiases.push_back(Vector(layers[i + 1], 0.0));
+        }
+    }
+    activations[0] = testData;
+
+    Vector dBiases_tOutput(10, 0);
+    Matrix dWeights_tOutput(10, Vector(300, 0));
+    Vector dWeights_tFlattened(3000, 0);
+
+    Vector dBiases_tOutput2(300, 0);
+    Matrix dWeights_tOutput2(300, Vector(300, 0));
+    Vector dWeights_tFlattened2(90000, 0);
+    if (isGPU)
+    {
+
+    }
+    else
+    {
+        std::cout << "CPU Output: \n";
+        for (int i = 1; i < numLayers; i++) {
+            forwardZ(weights[i - 1], biases[i - 1], activations[i - 1], zs[i]);
+            sigmoid(zs[i], activations[i]);
+        }
+        // Run full forward z pass then run one layer of backwards
+        //cu_utility::printVector(zs[numLayers - 1], 10);
+        Vector delta(10, 0);
+        cost_derivative(activations[numLayers - 1], testLabel, delta);
+        Vector z_temp = Vector(zs[numLayers - 1].size(), 0);
+        d_sigmoid(zs[numLayers - 1], z_temp);
+        multiply_elementwise(z_temp, delta, dBiases_tOutput);
+        outer_product(dBiases_tOutput, activations[numLayers - 2],
+            dWeights_tOutput);
+        //cu_utility::printVector(dWeights_tOutput[4], 10); // correct
+        //cu_utility::printVector(weights[numLayers - 2][4], 10);
+
+        activation_derivative(weights[numLayers - 2], zs[numLayers - 1], delta);
+        utility::printVector(delta, 10);
+        z_temp = Vector(zs[numLayers - 2].size(), 0);
+        d_sigmoid(zs[numLayers - 2], z_temp);
+        multiply_elementwise(z_temp, delta, dBiases_tOutput2);
+        outer_product(dBiases_tOutput2, activations[1],
+            dWeights_tOutput2);
+
+        //cu_utility::printVector(dWeights_tOutput2[0], 10);
+
+    }
 }
 
 float NN::evaluate(const Matrix &testData, const std::vector<int> &testLabels) {

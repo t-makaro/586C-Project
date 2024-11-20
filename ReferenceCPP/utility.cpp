@@ -17,6 +17,19 @@ void utility::PrintCSV(std::string csvPath) {
     std::cout << std::endl;
   }
 }
+void utility::printVector(const std::vector<float>& v, const int& rowLength)
+{
+    size_t cutoff = v.size() > 300 ? 300 : v.size();
+    for (int i = 0; i < cutoff; i++)
+    {
+        if (rowLength > 0 && i % rowLength == 0)
+        {
+            std::cout << '\n';
+        }
+        std::cout << v[i] << " ";
+    }
+    std::cout << "\n";
+}
 
 vector<vector<float>> utility::ReadDatasetCSV(std::string csvPath,
                                               std::vector<int> &results) {

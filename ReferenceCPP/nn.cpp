@@ -198,7 +198,7 @@ void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
             sigmoid(zs[i], activations[i]);
         }
         // Run full forward z pass then run one layer of backwards
-        //cu_utility::printVector(zs[numLayers - 1], 10);
+        utility::printVector(zs[numLayers - 1], 10);
         Vector delta(10, 0);
         cost_derivative(activations[numLayers - 1], testLabel, delta);
         Vector z_temp = Vector(zs[numLayers - 1].size(), 0);
@@ -206,7 +206,7 @@ void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         multiply_elementwise(z_temp, delta, dBiases_tOutput);
         outer_product(dBiases_tOutput, activations[numLayers - 2],
             dWeights_tOutput);
-        //cu_utility::printVector(dWeights_tOutput[4], 10); // correct
+        //utility::printVector(dWeights_tOutput[0], 10); // correct
         //cu_utility::printVector(weights[numLayers - 2][4], 10);
 
         activation_derivative(weights[numLayers - 2], zs[numLayers - 1], delta);
@@ -214,11 +214,11 @@ void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         z_temp = Vector(zs[numLayers - 2].size(), 0);
         d_sigmoid(zs[numLayers - 2], z_temp);
         multiply_elementwise(z_temp, delta, dBiases_tOutput2);
-        //utility::printVector(dBiases_tOutput2, 10);
+        // utility::printVector(dBiases_tOutput2, 10);
+
         outer_product(dBiases_tOutput2, activations[1],
             dWeights_tOutput2);
-    	utility::printVector(dWeights_tOutput2[0], 10);
-
+    	//utility::printVector(dWeights_tOutput2[0], 10);
         //utility::printVector(dWeights_tOutput2[4], 10);
     }
 }

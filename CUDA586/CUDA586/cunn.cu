@@ -175,7 +175,7 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
             cudaMemcpy(zs[i].data(), d_zs[i], zs[i].size() * sizeof(float), cudaMemcpyDeviceToHost);
         }
         // Stage 2: Cost Derivative Pass (output layer)
-        //cu_utility::printVector(zs[numLayers - 1], 10); // zs is correct
+        cu_utility::printVector(zs[numLayers - 1], 10); // zs is correct
         std::vector<float*> d_delta = allocate_like_biases(); // delta.size = zsi.size for each layer i.e. like weight
         float* d_biasOutput, * d_weightOutput;
         int* d_testLabel;
@@ -193,7 +193,7 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         cudaMemcpy(dBiases_tOutput.data(), d_biasOutput, f_size * 10, cudaMemcpyDeviceToHost);
         cudaMemcpy(dWeights_tFlattened.data(), d_weightOutput, f_size * 3000, cudaMemcpyDeviceToHost);
 
-        //Vector sliced_vec(dWeights_tFlattened.begin() + 1200, dWeights_tFlattened.begin() + 1501);
+        Vector sliced_vec(dWeights_tFlattened.begin(), dWeights_tFlattened.begin() + 301);
         //cu_utility::printVector(sliced_vec, 10);
         
         
@@ -224,8 +224,8 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         //cu_utility::printVector(dBiases_tOutput2, 10);
         //cu_utility::printVector(dWeights_tFlattened2, 10);
          //Vector sliced_vec(dWeights_tFlattened2.begin() + 1200, dWeights_tFlattened2.begin() + 1501);
-        Vector sliced_vec(dWeights_tFlattened2.begin(), dWeights_tFlattened2.begin() + 301);
-        cu_utility::printVector(sliced_vec, 10);
+        //Vector sliced_vec(dWeights_tFlattened2.begin(), dWeights_tFlattened2.begin() + 301);
+        //cu_utility::printVector(sliced_vec, 10);
         cudaFree(d_biasOutput);
         cudaFree(d_weightOutput);
         cudaFree(d_testLabel);

@@ -220,8 +220,12 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         cudaDeviceSynchronize();
         cudaMemcpy(dBiases_tOutput2.data(), d_biasOutput2, f_size * 300, cudaMemcpyDeviceToHost);
         cudaMemcpy(dWeights_tFlattened2.data(), d_weightOutput2, f_size * 90000, cudaMemcpyDeviceToHost);
-        cu_utility::printVector(dBiases_tOutput2, 10);
+
+        //cu_utility::printVector(dBiases_tOutput2, 10);
         //cu_utility::printVector(dWeights_tFlattened2, 10);
+         //Vector sliced_vec(dWeights_tFlattened2.begin() + 1200, dWeights_tFlattened2.begin() + 1501);
+        Vector sliced_vec(dWeights_tFlattened2.begin(), dWeights_tFlattened2.begin() + 301);
+        cu_utility::printVector(sliced_vec, 10);
         cudaFree(d_biasOutput);
         cudaFree(d_weightOutput);
         cudaFree(d_testLabel);
@@ -256,8 +260,6 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         multiply_elementwise(z_temp, delta, dBiases_tOutput2);
         outer_product(dBiases_tOutput2, activations[1],
             dWeights_tOutput2);
-        
-        //cu_utility::printVector(dWeights_tOutput2[0], 10);
         
     }
     

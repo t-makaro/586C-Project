@@ -604,6 +604,7 @@ void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_out
     cudaDeviceSynchronize();
     blocksPerGrid = (inSize * outSize + threadsPerBlock - 1) / threadsPerBlock;
     global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_dWeight_output, outSize, inSize);
+    //cudaDeviceSynchronize();
 }
 
 float* cu_utility::copyDataToDevice(Matrix& X) {

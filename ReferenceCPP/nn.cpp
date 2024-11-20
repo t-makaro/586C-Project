@@ -214,12 +214,12 @@ void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
         z_temp = Vector(zs[numLayers - 2].size(), 0);
         d_sigmoid(zs[numLayers - 2], z_temp);
         multiply_elementwise(z_temp, delta, dBiases_tOutput2);
-        utility::printVector(dBiases_tOutput2, 10);
+        //utility::printVector(dBiases_tOutput2, 10);
         outer_product(dBiases_tOutput2, activations[1],
             dWeights_tOutput2);
+    	utility::printVector(dWeights_tOutput2[0], 10);
 
-        //cu_utility::printVector(dWeights_tOutput2[0], 10);
-
+        //utility::printVector(dWeights_tOutput2[4], 10);
     }
 }
 

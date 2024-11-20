@@ -46,7 +46,7 @@ int main() {
     nn.evaluate(csvTestData, testLabels);
 
     // NN weird test case for bachwards pass
-    //nn.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
+    nn.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
 
     // NN 3: Train on the training set
 

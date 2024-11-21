@@ -361,7 +361,7 @@ std::vector<float*> CUNN::allocate_like_biases() {
 }
 void deallocateVector(const std::vector<float*> &vec) {
     for (int i = 0; i < vec.size(); i++) {
-        cudaFree(vec[0]);
+        cudaFree(vec[i]);
     }
 }
 
@@ -372,17 +372,19 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     std::vector<float*> d_ddBiases = allocate_like_biases();
 
     // calculate individual gradiants and average them together
+    std::vector<float*> d_dWeights = allocate_like_weights();
+    std::vector<float*> d_dBiases = allocate_like_biases();
+    std::vector<float*> d_delta = allocate_like_biases(); // delta.size = zsi.size for each layer i.e. like biases
     for (int i = 0; i < batchSize; i++) {
-        std::vector<float*> d_dWeights = allocate_like_weights();
-        std::vector<float*> d_dBiases = allocate_like_biases();
-        backwards(d_dWeights, d_dBiases, d_batch+i*dataLen, d_labels+i, dataLen);
+        backwards(d_dWeights, d_dBiases, d_delta,d_batch+i*dataLen, d_labels+i, dataLen);
         for (int j = 0; j < numLayers-1; j++) {
             cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[j + 1] * layers[j], 1.0 / batchSize);
             cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[j + 1], 1.0 / batchSize);
         }
-        deallocateVector(d_dWeights);
-        deallocateVector(d_dBiases);
     }
+    deallocateVector(d_dWeights);
+    deallocateVector(d_dBiases);
+    deallocateVector(d_delta);
     // update the weights and biases with gradient computed above at the learning rate
     for (int j = 0; j < numLayers-1; j++) {
         cu_utility::d_VectorAdd(d_weights[j], d_ddWeights[j], d_weights[j], layers[j + 1] * layers[j], -learningRate);
@@ -394,7 +396,7 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
 }
 
 void CUNN::backwards(std::vector<float*> &dWeights_output,
-    std::vector<float*> &dBiases_output,
+    std::vector<float*> &dBiases_output,std::vector<float*> &d_delta,
     const float* testData, const int* testLabel, size_t dataLen) {
 
     cudaMemcpy(d_activations[0], testData, dataLen * sizeof(float), cudaMemcpyDeviceToDevice);// activations[0] = testData;
@@ -405,7 +407,7 @@ void CUNN::backwards(std::vector<float*> &dWeights_output,
         int N = layers[i];
         cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i],d_activations[i], M, N);
     }
-    std::vector<float*> d_delta = allocate_like_biases(); // delta.size = zsi.size for each layer i.e. like weight
+    
     //Vector delta;
     for (int i = 0; i < numLayers - 1; i++) {
         if (i == 0) {

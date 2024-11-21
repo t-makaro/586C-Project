@@ -5,8 +5,8 @@
 #include "cu_utility.cuh"
 #include "cunn.cuh"
 
-#define TEST_FORWARD false
-#define BACK_TEST true
+#define TEST_FORWARD true
+#define BACK_TEST false
 
 int main() {
     // TEST CASES
@@ -181,14 +181,14 @@ int main() {
     std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_trainData, d_trainLabels, M_train);
 
+    // NN 4: Training Set
+    nn.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);
+
     // NN 3: Forward Pass Test Set
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
-	nn.evaluate(d_testData, d_testLabels, M_test);
+    nn.evaluate(d_testData, d_testLabels, M_test);
 
-    // NN 4: Training Set
-    // nn.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);
-
-    // Free thhe GPU memory
+    // Free the GPU memory
     cudaFree(d_trainData);
     cudaFree(d_trainLabels);
     cudaFree(d_testData);

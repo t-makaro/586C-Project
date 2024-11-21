@@ -77,7 +77,7 @@ private:
         const Vector& a, Vector& result);
 
     void backwards(std::vector<float*> &dWeights_output,
-        std::vector<float*> &dBiases_output,
+        std::vector<float*> &dBiases_output, std::vector<float*>& d_delta,
         const float* testData, const int* testLabel, size_t dataLen);
     void cost_derivative(const Vector& last_activation, const int label,
         Vector& result);

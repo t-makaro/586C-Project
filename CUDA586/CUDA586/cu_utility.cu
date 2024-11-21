@@ -541,6 +541,7 @@ void cu_utility::cuForwardLayerWithZs(const float* d_W, const float* d_b, const 
     int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
     global_forwardLayer_zsi << <blocksPerGrid, threadsPerBlock >> > (d_W, d_b, d_x, d_y, d_zsi,
         M, N);
+    cudaDeviceSynchronize();
 }
 
 

@@ -171,11 +171,11 @@ void CUNN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
             int N = layers[i - 1];
             int M = layers[i];
             cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i], d_activations[i], M, N);
-            cudaDeviceSynchronize();
+            //cudaDeviceSynchronize();
             cudaMemcpy(zs[i].data(), d_zs[i], zs[i].size() * sizeof(float), cudaMemcpyDeviceToHost);
         }
         // Stage 2: Cost Derivative Pass (output layer)
-        // cu_utility::printVector(zs[numLayers - 1], 10); // zs is correct
+        cu_utility::printVector(zs[numLayers - 1], 10); // zs is correct
         std::vector<float*> d_delta = allocate_like_biases(); // delta.size = zsi.size for each layer i.e. like weight
         float* d_biasOutput, * d_weightOutput;
         int* d_testLabel;
@@ -397,7 +397,7 @@ void CUNN::backwards(std::vector<float*> &dWeights_output,
     std::vector<float*> &dBiases_output,
     const float* testData, const int* testLabel, size_t dataLen) {
 
-    cudaMemcpy(d_activations[0], testData, dataLen, cudaMemcpyDeviceToDevice);// activations[0] = testData;
+    cudaMemcpy(d_activations[0], testData, dataLen * sizeof(float), cudaMemcpyDeviceToDevice);// activations[0] = testData;
     
 
     for (int i = 1; i < numLayers; i++) {

@@ -142,7 +142,7 @@ int main() {
         //tnn3.testBackwardOutputLayer(false, csvTestData[0], testLabels[0]);
 
         tnn4.copyParametersToDevice();
-        tnn4.testBackwardOutputLayer(true, csvTestData[3], testLabels[3]);
+        tnn4.testBackwardOutputLayer(true, csvTestData[2], testLabels[2]);
     }
     
 

@@ -705,6 +705,20 @@ void cu_utility::printVector(const std::vector<float>& v, const int& rowLength)
     std::cout << "\n";
 }
 
+void cu_utility::printVectorGPU(const float* d_v, int N, const int& rowLength) {
+	size_t size = N * sizeof(float);
+	std::vector<float> v(N);
+	cudaMemcpy(v.data(), d_v, size, cudaMemcpyDeviceToHost);
+	printVector(v, rowLength);
+}
+
+void cu_utility::printMatrixRowGPU(const float* d_v, int M, int N, int row, const int& rowLength) {
+	size_t size = N * sizeof(float);
+	std::vector<float> v(N);
+	cudaMemcpy(v.data(), d_v + row * N, size, cudaMemcpyDeviceToHost);
+	printVector(v, rowLength);
+}
+
 
 std::vector<std::vector<float>>& cu_utility::cuForward(
 	const std::vector<float*> d_weights, const std::vector<float*> d_biases,

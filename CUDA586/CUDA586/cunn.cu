@@ -313,8 +313,18 @@ void CUNN::train(const float* d_trainingData, const int* d_trainingLabels,
     for (int j = 0; j < iterations; j++) {
         for (int i = 0; i < M; i += batchSize) {
             updateFromBatch(d_trainingData+i*N, d_trainingLabels+i, batchSize, N, learningRate);
+            break;
         }
+        break;
     }
+
+	for (int i = 0; i < numLayers - 1; i++) {
+		std::cout << "Layer " << i << ":\n";    
+		std::cout << "Weights:\n";
+		cu_utility::printMatrixRowGPU(d_weights[i], layers[i + 1], layers[i], 0, 10);
+		std::cout << "Biases:\n";
+		cu_utility::printVectorGPU(d_biases[i], layers[i + 1], 10);
+	}
 }
 
 std::vector<float*> CUNN::allocate_like_weights() {

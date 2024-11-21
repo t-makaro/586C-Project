@@ -177,12 +177,13 @@ int main() {
     int forwardBatchSize = 2400;
     nn.setBatchSizeDevice(forwardBatchSize);
 
+    nn.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);
+
     // NN 2: Forward Pass Training Set
     std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_trainData, d_trainLabels, M_train);
 
     // NN 4: Training Set
-    nn.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);
 
     // NN 3: Forward Pass Test Set
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;

@@ -57,5 +57,6 @@ public:
 
 	static void testOuterProductAndTranspose(const std::vector<float>& a, const std::vector<float>&b, std::vector<float> &outer, std::vector<float>& transp);
 	static void printVector(const std::vector<float>& v, const int& rowLength);
-
+	static void printVectorGPU(const float* d_v, int N, const int& rowLength);
+	static void printMatrixRowGPU(const float* d_v, int M, int N, int row, const int& rowLength);
 };

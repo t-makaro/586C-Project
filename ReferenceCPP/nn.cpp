@@ -198,7 +198,7 @@ void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
             sigmoid(zs[i], activations[i]);
         }
         // Run full forward z pass then run one layer of backwards
-        utility::printVector(zs[numLayers - 1], 10);
+        // utility::printVector(zs[numLayers - 1], 10);
         Vector delta(10, 0);
         cost_derivative(activations[numLayers - 1], testLabel, delta);
         Vector z_temp = Vector(zs[numLayers - 1].size(), 0);
@@ -218,8 +218,8 @@ void NN::testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel)
 
         outer_product(dBiases_tOutput2, activations[1],
             dWeights_tOutput2);
-    	//utility::printVector(dWeights_tOutput2[0], 10);
-        //utility::printVector(dWeights_tOutput2[4], 10);
+    	utility::printVector(dWeights_tOutput2[0], 10);
+        utility::printVector(dWeights_tOutput2[4], 10);
     }
 }
 

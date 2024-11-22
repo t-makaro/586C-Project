@@ -387,8 +387,8 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     for (int i = 0; i < batchSize; i++) {
         backwards(d_dWeights, d_dBiases, d_delta,d_batch+i*dataLen, d_labels+i, dataLen);
         for (int j = 0; j < numLayers-1; j++) {
-            cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[j + 1] * layers[j], 1.0 / batchSize);
-            cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[j + 1], 1.0 / batchSize);
+            //cu_utility::d_VectorAdd(d_ddWeights[j], d_dWeights[j], d_ddWeights[j], layers[j + 1] * layers[j], 1.0 / batchSize);
+            //cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[j + 1], 1.0 / batchSize);
         }
     }
     deallocateVector(d_dWeights);
@@ -396,8 +396,8 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     deallocateVector(d_delta);
     // update the weights and biases with gradient computed above at the learning rate
     for (int j = 0; j < numLayers-1; j++) {
-        cu_utility::d_VectorAdd(d_weights[j], d_ddWeights[j], d_weights[j], layers[j + 1] * layers[j], -learningRate);
-        cu_utility::d_VectorAdd(d_biases[j], d_ddBiases[j], d_biases[j], layers[j + 1], -learningRate);
+        //cu_utility::d_VectorAdd(d_weights[j], d_ddWeights[j], d_weights[j], layers[j + 1] * layers[j], -learningRate);
+        //cu_utility::d_VectorAdd(d_biases[j], d_ddBiases[j], d_biases[j], layers[j + 1], -learningRate);
     }
 
     deallocateVector(d_ddWeights);
@@ -412,16 +412,17 @@ void CUNN::backwards(std::vector<float*> &dWeights_output,
     
 
     for (int i = 1; i < numLayers; i++) {
-        int M = layers[i - 1];
-        int N = layers[i];
+        int M = layers[i];
+        int N = layers[i - 1];
         cu_utility::cuForwardLayerWithZs(d_weights[i - 1], d_biases[i - 1], d_activations[i - 1], d_zs[i],d_activations[i], M, N);
     }
-    
+    return;
     //Vector delta;
     for (int i = 0; i < numLayers - 1; i++) {
         if (i == 0) {
             cu_utility::cuBackwardOutputLayer(d_activations[numLayers - 1], d_activations[numLayers - 2], dBiases_output[numLayers - 2], dWeights_output[numLayers - 2],
                 d_zs[numLayers - 1], d_delta[numLayers - 2], testLabel, layers[2], layers[3]);
+            
         }
         else {
             cu_utility::cuBackwardRegularLayer(d_activations[numLayers - 2 - i], dBiases_output[numLayers - 2 - i], d_weights[numLayers - i - 1], dWeights_output[numLayers - 2 - i], d_zs[numLayers - i - 1], d_zs[numLayers - i],

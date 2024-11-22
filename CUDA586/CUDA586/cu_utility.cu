@@ -143,11 +143,11 @@ __device__ void cost_derivative(const float* last_activation, const int label, c
     {
         if (i == label) {
             //result[i] = -1.0f / (last_activation[i] + 0.01);
-            result[i] = -1;
+            result[i] = __fdividef(-1.0f, last_activation[i] + FLT_EPSILON);
         }
         else {
             //result[i] = 1.0f / (1.0f - last_activation[i] - 0.01);
-            result[i] = 1;
+            result[i] = __fdividef(-1.0f, 1.0f - last_activation[i] + FLT_EPSILON);
         }
     }
 }
@@ -227,7 +227,7 @@ __global__ void global_forwardLayer_zsi(const float* W, const float* b, const fl
 {
     // We need the intermediate value Zs in the backward pass.
     matMulVec(W, A, zsi, M, N);
-    vectorAdd(zsi, b, zsi, N);
+    vectorAdd(zsi, b, zsi, M);
     sigmoid_non_inplace(zsi, M, result);
 }
 

@@ -23,12 +23,28 @@ int main() {
 
     // Util 2: Read Weights and Biases
     std::cout << "Reading in weights..." << std::endl;
+
+#define READ_TRAINED_WEIGHT
+
+#ifdef READ_TRAINED_WEIGHT
+    auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");
+    auto weights_a1 = utility::ReadWeight("../data/weights_a1.csv");
+    auto biases_a2 = utility::ReadBias("../data/biases_a2.csv");
+    auto weights_a2 = utility::ReadWeight("../data/weights_a2.csv");
+    auto biases_o = utility::ReadBias("../data/biases_o.csv");
+    auto weights_o = utility::ReadWeight("../data/weights_o.csv");
+#else
     auto biases_a1 = utility::ReadBias("../data/biases_a1_init.csv");
     auto weights_a1 = utility::ReadWeight("../data/weights_a1_init.csv");
     auto biases_a2 = utility::ReadBias("../data/biases_a2_init.csv");
     auto weights_a2 = utility::ReadWeight("../data/weights_a2_init.csv");
     auto biases_o = utility::ReadBias("../data/biases_o_init.csv");
     auto weights_o = utility::ReadWeight("../data/weights_o_init.csv");
+
+#endif
+
+
+    
 
     // NN 0: Init Neural Network
     std::cout << "Initializing NN..." << std::endl;

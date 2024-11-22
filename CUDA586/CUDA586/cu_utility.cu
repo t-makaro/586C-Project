@@ -142,10 +142,12 @@ __device__ void cost_derivative(const float* last_activation, const int label, c
     if(i < outLayerLength) // outLayerLength is always 10 (for the 10 digits)
     {
         if (i == label) {
-            result[i] = -1.0f / (last_activation[i] + FLT_EPSILON);
+            //result[i] = -1.0f / (last_activation[i] + 0.01);
+            result[i] = -1;
         }
         else {
-            result[i] = 1.0f / (1.0f - last_activation[i] + FLT_EPSILON);
+            //result[i] = 1.0f / (1.0f - last_activation[i] - 0.01);
+            result[i] = 1;
         }
     }
 }
@@ -606,6 +608,8 @@ void cu_utility::cuBackwardRegularLayer(float* d_inActivation, float* d_bias_out
     blocksPerGrid = (inSize * outSize + threadsPerBlock - 1) / threadsPerBlock;
     global_outer_product << <blocksPerGrid, threadsPerBlock >> > (d_bias_output, d_inActivation, d_dWeight_output, outSize, inSize);
     //cudaDeviceSynchronize();
+    cudaFree(d_zstemp_o);
+    cudaFree(d_zstemp_i);
 }
 
 float* cu_utility::copyDataToDevice(Matrix& X) {

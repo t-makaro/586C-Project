@@ -24,7 +24,7 @@ int main() {
     // Util 2: Read Weights and Biases
     std::cout << "Reading in weights..." << std::endl;
 
-#define READ_TRAINED_WEIGHT
+//#define READ_TRAINED_WEIGHT
 
 #ifdef READ_TRAINED_WEIGHT
     auto biases_a1 = utility::ReadBias("../data/biases_a1.csv");

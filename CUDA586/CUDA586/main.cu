@@ -5,8 +5,8 @@
 #include "cu_utility.cuh"
 #include "cunn.cuh"
 
-#define TEST_FORWARD true
-#define BACK_TEST false
+#define TEST_FORWARD false
+#define BACK_TEST true
 
 int main() {
     // TEST CASES

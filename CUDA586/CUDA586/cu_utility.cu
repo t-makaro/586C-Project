@@ -142,12 +142,12 @@ __device__ void cost_derivative(const float* last_activation, const int label, c
     if(i < outLayerLength) // outLayerLength is always 10 (for the 10 digits)
     {
         if (i == label) {
-            //result[i] = -1.0f / (last_activation[i] + 0.01);
-            result[i] = __fdividef(-1.0f, last_activation[i] + FLT_EPSILON);
+            result[i] = -1.0f / (last_activation[i] + FLT_EPSILON);
+            //result[i] = __fdividef(-1.0f, last_activation[i] + FLT_EPSILON);
         }
         else {
-            //result[i] = 1.0f / (1.0f - last_activation[i] - 0.01);
-            result[i] = __fdividef(-1.0f, 1.0f - last_activation[i] + FLT_EPSILON);
+            result[i] = 1.0f / (1.0f - last_activation[i] + FLT_EPSILON);
+            //result[i] = __fdividef(-1.0f, 1.0f - last_activation[i] + FLT_EPSILON);
         }
     }
 }

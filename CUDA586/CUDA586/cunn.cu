@@ -311,7 +311,7 @@ void CUNN::train(const float* d_trainingData, const int* d_trainingLabels,
     for (int j = 0; j < iterations; j++) {
         for (int i = 0; i < M; i += batchSize) {
             updateFromBatch(d_trainingData+i*N, d_trainingLabels+i, batchSize, N, learningRate);
-            break;
+            
         }
     }
 

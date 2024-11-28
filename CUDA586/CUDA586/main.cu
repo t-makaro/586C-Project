@@ -5,8 +5,8 @@
 #include "cu_utility.cuh"
 #include "cunn.cuh"
 
-#define TEST_FORWARD false
-#define BACK_TEST true
+#define TEST_FORWARD true
+#define BACK_TEST false
 
 int main() {
     // TEST CASES
@@ -47,12 +47,12 @@ int main() {
     std::cout << "Test labels size: " << testLabels.size() << std::endl;
 
   // Util 2: Read Weights and Biases
-    auto biases_a1 = utility::ReadBias("../../data/biases_a1.csv");
-    auto weights_a1 = utility::ReadWeight("../../data/weights_a1.csv");
-    auto biases_a2 = utility::ReadBias("../../data/biases_a2.csv");
-    auto weights_a2 = utility::ReadWeight("../../data/weights_a2.csv");
-    auto biases_o = utility::ReadBias("../../data/biases_o.csv");
-    auto weights_o = utility::ReadWeight("../../data/weights_o.csv");
+    auto biases_a1 = utility::ReadBias("../../data/biases_a1_init.csv");
+    auto weights_a1 = utility::ReadWeight("../../data/weights_a1_init.csv");
+    auto biases_a2 = utility::ReadBias("../../data/biases_a2_init.csv");
+    auto weights_a2 = utility::ReadWeight("../../data/weights_a2_init.csv");
+    auto biases_o = utility::ReadBias("../../data/biases_o_init.csv");
+    auto weights_o = utility::ReadWeight("../../data/weights_o_init.csv");
 
 
     //// CU 2: Sigmoid Vec

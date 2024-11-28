@@ -54,7 +54,7 @@ void NN::train(const Matrix trainingData, const std::vector<int> trainingLabels,
       Matrix sampleData = sliceMatrix(trainingData, i, i+batchSize);
       std::vector<int> sampleLabels = sliceVector(trainingLabels, i, i+batchSize);
       updateFromBatch(sampleData, sampleLabels, learningRate);
-      break;
+      //break;
     }
   }
 }

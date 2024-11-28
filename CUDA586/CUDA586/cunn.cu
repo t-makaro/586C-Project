@@ -308,10 +308,10 @@ Vector& CUNN::forwardLayer(const Matrix& w, const Vector& b, const Vector& a,
 void CUNN::train(const float* d_trainingData, const int* d_trainingLabels, 
     const int M, const int N, const int iterations, const int batchSize,
     float learningRate) {
+    auto start = std::chrono::high_resolution_clock::now();
     for (int j = 0; j < iterations; j++) {
         for (int i = 0; i < M; i += batchSize) {
             updateFromBatch(d_trainingData+i*N, d_trainingLabels+i, batchSize, N, learningRate);
-            
         }
     }
 
@@ -322,6 +322,10 @@ void CUNN::train(const float* d_trainingData, const int* d_trainingLabels,
 		std::cout << "Biases:\n";
 		cu_utility::printVectorGPU(d_biases[i], layers[i + 1], 10);
 	}
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "trained." << std::endl;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
 }
 
 std::vector<float*> CUNN::allocate_like_weights() {

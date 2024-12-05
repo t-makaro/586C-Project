@@ -310,7 +310,7 @@ void CUNN::train(const float* d_trainingData, const int* d_trainingLabels,
     float learningRate) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int j = 0; j < iterations; j++) {
-        for (int i = 0; i < M; i += batchSize) {
+        for (int i = 0; i < 1000; i += batchSize) {
             updateFromBatch(d_trainingData+i*N, d_trainingLabels+i, batchSize, N, learningRate);
         }
     }
@@ -388,6 +388,7 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
     std::vector<float*> d_dWeights = allocate_like_weights();
     std::vector<float*> d_dBiases = allocate_like_biases();
     std::vector<float*> d_delta = allocate_like_biases(); // delta.size = zsi.size for each layer i.e. like biases
+
     for (int i = 0; i < batchSize; i++) {
         backwards(d_dWeights, d_dBiases, d_delta,d_batch+i*dataLen, d_labels+i, dataLen);
         for (int j = 0; j < numLayers-1; j++) {
@@ -395,9 +396,11 @@ void CUNN::updateFromBatch(const float* d_batch, const int* d_labels,
             cu_utility::d_VectorAdd(d_ddBiases[j], d_dBiases[j], d_ddBiases[j], layers[j + 1], 1.0 / batchSize);
         }
     }
+
     deallocateVector(d_dWeights);
     deallocateVector(d_dBiases);
     deallocateVector(d_delta);
+
     // update the weights and biases with gradient computed above at the learning rate
     for (int j = 0; j < numLayers-1; j++) {
         cu_utility::d_VectorAdd(d_weights[j], d_ddWeights[j], d_weights[j], layers[j + 1] * layers[j], -learningRate);

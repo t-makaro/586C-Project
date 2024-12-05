@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 
+#include <cublas_v2.h>
+
 typedef std::vector<float> Vector;
 typedef std::vector<Vector> Matrix;
 
@@ -59,4 +61,6 @@ public:
 	static void printVector(const std::vector<float>& v, const int& rowLength);
 	static void printVectorGPU(const float* d_v, int N, const int& rowLength);
 	static void printMatrixRowGPU(const float* d_v, int M, int N, int row, const int& rowLength);
+
+	static int testCuBlas();
 };

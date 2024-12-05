@@ -315,17 +315,19 @@ void CUNN::train(const float* d_trainingData, const int* d_trainingLabels,
         }
     }
 
-	for (int i = 0; i < numLayers - 1; i++) {
-		std::cout << "Layer " << i << ":\n";    
-		std::cout << "Weights:\n";
-		cu_utility::printMatrixRowGPU(d_weights[i], layers[i + 1], layers[i], 0, 10);
-		std::cout << "Biases:\n";
-		cu_utility::printVectorGPU(d_biases[i], layers[i + 1], 10);
-	}
+#if BACK_TEST
+    for (int i = 0; i < numLayers - 1; i++) {
+        std::cout << "Layer " << i << ":\n";
+        std::cout << "Weights:\n";
+        cu_utility::printMatrixRowGPU(d_weights[i], layers[i + 1], layers[i], 0, 10);
+        std::cout << "Biases:\n";
+        cu_utility::printVectorGPU(d_biases[i], layers[i + 1], 10);
+    }
+#endif
+
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    std::cout << "trained." << std::endl;
-    std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
+    std::cout << "Train time: " << elapsed.count() << " seconds." << std::endl;
 }
 
 std::vector<float*> CUNN::allocate_like_weights() {

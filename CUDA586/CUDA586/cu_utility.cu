@@ -264,20 +264,59 @@ __global__ void global_matTranMul(const float* mat, const float* vec, int M, int
     transposeMultiply(mat, vec, res, M, N);
 }
 
-__global__ void global_forwardLayerBatch(const float* W, const float* b, const float* A, float* result, int M, int N, int batchSize)
+__device__ void batched_forwardMatMul(const float* W, const float* A, float* result, int M, int N, int batchSize, int i, int j)
+{
+	float tmp = 0.0;
+	for (int k = 0; k < N; k++) {
+		tmp += W[i * N + k] * A[j * N + k];
+	}
+	result[j * M + i] = tmp;
+}
+__global__ void batched_forwardMatMul(const float* W, const float* A, float* result, int M, int N, int batchSize)
 {
 	int j = blockIdx.x * blockDim.x + threadIdx.x;
 	int i = blockIdx.y * blockDim.y + threadIdx.y;
-
-    // multiply, add, sigmoid
 	if (i < M && j < batchSize) {
-		float tmp = 0.0;
-		for (int k = 0; k < N; k++) {
-			tmp += W[i * N + k] * A[j * N + k];
-		}
-        result[j * M + i] = tmp + b[i];
-        result[j * M + i] = sigmoid(result[j * M + i]);
+		batched_forwardMatMul(W, A, result, M, N, batchSize, i, j);
 	}
+}
+
+__device__ void batched_addBiases(const float* b, const float* inputMatrix, float* result, int M, int batchSize, int i, int j)
+{
+	result[j * M + i] = inputMatrix[j * M + i] + b[i];
+}
+__global__ void batched_addBiases(const float* b, const float* inputMatrix, float* result, int M, int batchSize)
+{
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
+	if (i < M && j < batchSize) {
+		batched_addBiases(inputMatrix, b, result, M, batchSize, i, j);
+	}
+}
+
+__device__ void batched_sigmoid(const float* Z, float* result, int M, int batchSize, int i, int j)
+{
+	result[j * M + i] = sigmoid(Z[j * M + i]);
+}
+__global__ void batched_sigmoid(const float* Z, float* result, int M, int batchSize)
+{
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
+	if (i < M && j < batchSize) {
+		batched_sigmoid(Z, result, M, batchSize, i, j);
+	}
+}
+
+__global__ void global_forwardLayerBatch(const float* W, const float* b, const float* A, float* result, int M, int N, int batchSize)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (i < M && j < batchSize) {
+		batched_forwardMatMul(W, A, result, M, N, batchSize, i, j);
+		batched_addBiases(b, result, result, M, batchSize, i, j);
+        batched_sigmoid(result, result, M, batchSize, i, j);
+    }
 }
 
 __global__ void countNumCorrectPredictions(const float* predictions, const int* labels, int* numCorrect, int numExamples, int numClasses) {
@@ -797,6 +836,7 @@ int cu_utility::cuForwardBatch(
     int batchSize
 ) {
     int N = 784;
+    int implementation = 1; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
 
     // alloc memory for predictions
 	float* d_predictions;
@@ -808,15 +848,52 @@ int cu_utility::cuForwardBatch(
 		dim3 gridDim(batchSize, CEIL_DIV(300, blockDim.y), 1);
 
         for (int layer = 1; layer < layers.size(); layer++) {
-			gridDim = dim3(batchSize, CEIL_DIV(layers[layer], blockDim.y), 1);    
-			global_forwardLayerBatch << <gridDim, blockDim>> > (
-                d_weights[layer - 1], 
-                d_biases[layer - 1], 
-				(layer == 1) ? d_x : d_activations_batch[layer - 1],
-				(layer == layers.size() - 1) ? d_predictions + i * 10 : d_activations_batch[layer],
-                layers[layer], 
-                layers[layer - 1], 
-                batchSize);
+			gridDim = dim3(batchSize, CEIL_DIV(layers[layer], blockDim.y), 1);
+
+            const float* input = (layer == 1) ? d_x : d_activations_batch[layer - 1];
+            float* output = (layer == layers.size() - 1) ? d_predictions + i * 10 : d_activations_batch[layer];
+
+            switch (implementation) {
+            case 0:
+                global_forwardLayerBatch <<<gridDim, blockDim>>> (
+                    d_weights[layer - 1],
+                    d_biases[layer - 1],
+                    input,
+                    output,
+                    layers[layer],
+                    layers[layer - 1],
+                    batchSize);
+                break;
+            case 1:
+                // separate global kernels (Averages about 4ms slower than case 0)
+				batched_forwardMatMul <<<gridDim, blockDim>>>(
+					d_weights[layer - 1],
+					input,
+                    output,
+					layers[layer],
+					layers[layer - 1],
+					batchSize);
+                batched_addBiases <<<gridDim, blockDim >>> (
+                    output,
+                    d_biases[layer - 1],
+                    output,
+                    layers[layer],
+                    batchSize);
+                batched_sigmoid <<<gridDim, blockDim >>> (
+                    output,
+                    output,
+                    layers[layer],
+                    batchSize);
+                break;
+			case 2:
+				// cublas
+				break;
+            case 3:
+                // tensor cores
+				break;
+            default:
+                std::cout << "Invalid Implementation" << std::endl;
+            }
         }   
     }
 
@@ -825,7 +902,7 @@ int cu_utility::cuForwardBatch(
 	cudaMalloc(&d_numCorrect, sizeof(int));
 	cudaMemset(d_numCorrect, 0, sizeof(int));
 
-	int threadsPerBlock = 256;
+	int threadsPerBlock = 128;
 	int blocksPerGrid = CEIL_DIV(numExamples, threadsPerBlock);
 	countNumCorrectPredictions << <blocksPerGrid, threadsPerBlock >> > (d_predictions, d_Y, d_numCorrect, numExamples, 10);
 

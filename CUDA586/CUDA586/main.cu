@@ -5,10 +5,10 @@
 #include "cu_utility.cuh"
 #include "cunn.cuh"
 
-#define TEST_FORWARD false
+#define TEST_FORWARD true
 #define BACK_TEST false
 #define RUN_MAT_TEST false
-#define TEST_CUBLAS true
+#define TEST_CUBLAS false
 
 int main() {
 #if TEST_CUBLAS
@@ -140,7 +140,7 @@ int main() {
 
     // NN 3: Forward Pass Test Set
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
-    //nn.evaluate(d_testData, d_testLabels, M_test);
+    nn.evaluate(d_testData, d_testLabels, M_test);
 
     // Free the GPU memory
     cudaFree(d_trainData);

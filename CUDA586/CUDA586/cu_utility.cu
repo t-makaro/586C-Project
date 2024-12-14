@@ -866,20 +866,20 @@ int cu_utility::cuForwardBatch(
                 break;
             case 1:
                 // separate global kernels (Averages about 4ms slower than case 0)
-				batched_forwardMatMul <<<gridDim, blockDim>>>(
+				batched_forwardMatMul<<<gridDim, blockDim>>>(
 					d_weights[layer - 1],
 					input,
                     output,
 					layers[layer],
 					layers[layer - 1],
 					batchSize);
-                batched_addBiases <<<gridDim, blockDim >>> (
+                batched_addBiases<<<gridDim, blockDim >>>(
                     output,
                     d_biases[layer - 1],
                     output,
                     layers[layer],
                     batchSize);
-                batched_sigmoid <<<gridDim, blockDim >>> (
+                batched_sigmoid<<<gridDim, blockDim >>>(
                     output,
                     output,
                     layers[layer],

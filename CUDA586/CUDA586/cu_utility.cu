@@ -291,7 +291,7 @@ __global__ void batched_addBiases(const float* b, const float* inputMatrix, floa
 	int j = blockIdx.x * blockDim.x + threadIdx.x;
 	int i = blockIdx.y * blockDim.y + threadIdx.y;
 	if (i < M && j < batchSize) {
-		batched_addBiases(inputMatrix, b, result, M, batchSize, i, j);
+		batched_addBiases(b, inputMatrix, result, M, batchSize, i, j);
 	}
 }
 
@@ -839,6 +839,9 @@ int cu_utility::cuForwardBatch(
     int N = 784;
     int implementation = 2; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
 
+    float alpha = 1.0f;
+    float beta = 0.0f;
+
     // alloc memory for predictions
 	float* d_predictions;
 	cudaMalloc(&d_predictions, numExamples * 10 * sizeof(float));
@@ -863,8 +866,7 @@ int cu_utility::cuForwardBatch(
             float* output = (layer == layers.size() - 1) ? d_predictions + i * 10 : d_activations_batch[layer];
             int M = layers[layer];
             int N2 = layers[layer-1];
-            float alpha = 1.0f;
-            float beta = 0.0f;
+
             switch (implementation) {
             case 0:
                 global_forwardLayerBatch <<<gridDim, blockDim>>> (
@@ -918,8 +920,8 @@ int cu_utility::cuForwardBatch(
                     M                     // Leading dimension of result
                 );
                 batched_addBiases<<<gridDim, blockDim >>>(
-                    output,
                     d_biases[layer - 1],
+                    output,
                     output,
                     layers[layer],
                     batchSize);

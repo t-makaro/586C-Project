@@ -837,7 +837,7 @@ int cu_utility::cuForwardBatch(
     int batchSize
 ) {
     int N = 784;
-    int implementation = 2; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
+    int implementation = 1; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
 
     float alpha = 1.0f;
     float beta = 0.0f;
@@ -888,8 +888,8 @@ int cu_utility::cuForwardBatch(
 					layers[layer - 1],
 					batchSize);
                 batched_addBiases<<<gridDim, blockDim >>>(
-                    output,
                     d_biases[layer - 1],
+                    output,
                     output,
                     layers[layer],
                     batchSize);

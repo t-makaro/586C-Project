@@ -1,6 +1,7 @@
 #include "cu_utility.cuh"
 
 #include "utility.h"
+#include <cublas_v2.h>
 // Device Kernels
 
 __device__ void vectorAdd(const float* A, const float* B, float* C, int N) {
@@ -836,11 +837,19 @@ int cu_utility::cuForwardBatch(
     int batchSize
 ) {
     int N = 784;
-    int implementation = 1; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
+    int implementation = 2; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
 
     // alloc memory for predictions
 	float* d_predictions;
 	cudaMalloc(&d_predictions, numExamples * 10 * sizeof(float));
+
+    // Create the cuBLAS handle
+    cublasHandle_t handle;
+    cublasStatus_t status = cublasCreate(&handle);
+    if (status != CUBLAS_STATUS_SUCCESS) {
+        std::cerr << "Failed to create cuBLAS handle" << std::endl;
+        return -1;
+    }
 
     dim3 blockDim(1, 32, 1);
     for (int i = 0; i < numExamples; i += batchSize) {
@@ -852,7 +861,10 @@ int cu_utility::cuForwardBatch(
 
             const float* input = (layer == 1) ? d_x : d_activations_batch[layer - 1];
             float* output = (layer == layers.size() - 1) ? d_predictions + i * 10 : d_activations_batch[layer];
-
+            int M = layers[layer];
+            int N2 = layers[layer-1];
+            float alpha = 1.0f;
+            float beta = 0.0f;
             switch (implementation) {
             case 0:
                 global_forwardLayerBatch <<<gridDim, blockDim>>> (
@@ -887,6 +899,35 @@ int cu_utility::cuForwardBatch(
                 break;
 			case 2:
 				// cublas
+                cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH); // use tensor cores
+                //cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH);
+                cublasSgemm(
+                    handle,               // cuBLAS handle
+                    CUBLAS_OP_T,          // No transpose for W
+                    CUBLAS_OP_N,          // No transpose for A
+                    M,                    // Number of rows of the result
+                    batchSize,            // Number of columns of the result
+                    N2,                    // Inner dimension of the multiplication
+                    &alpha,               // Scalar alpha
+                    d_weights[layer - 1],                  // Pointer to the first matrix W
+                    N2,                    // Leading dimension of W
+                    input,                  // Pointer to the first matrix A
+                    N2,                    // Leading dimension of A
+                    &beta,                // Scalar beta
+                    output,             // Pointer to the result matrices
+                    M                     // Leading dimension of result
+                );
+                batched_addBiases<<<gridDim, blockDim >>>(
+                    output,
+                    d_biases[layer - 1],
+                    output,
+                    layers[layer],
+                    batchSize);
+                batched_sigmoid<<<gridDim, blockDim >>>(
+                    output,
+                    output,
+                    layers[layer],
+                    batchSize);
 				break;
             case 3:
                 // tensor cores
@@ -910,6 +951,7 @@ int cu_utility::cuForwardBatch(
 	cudaMemcpy(&numCorrect, d_numCorrect, sizeof(int), cudaMemcpyDeviceToHost);
 
 	cudaFree(d_predictions);
+    cublasDestroy(handle);
 	return numCorrect;
 }
 

@@ -2,6 +2,10 @@
 
 #include "utility.h"
 #include <cublas_v2.h>
+#include <mma.h>
+
+using namespace nvcuda;
+
 // Device Kernels
 
 __device__ void vectorAdd(const float* A, const float* B, float* C, int N) {
@@ -281,6 +285,58 @@ __global__ void batched_forwardMatMul(const float* W, const float* A, float* res
 		batched_forwardMatMul(W, A, result, M, N, batchSize, i, j);
 	}
 }
+
+// TODO 
+// src: https://developer.nvidia.com/blog/programming-tensor-cores-cuda-9/ 
+
+const int WMMA_M = 16;
+const int WMMA_N = 16;
+const int WMMA_K = 8;
+
+__global__ void batched_forwardMatmulTensorCore(const float* a, const float* b, float* c, int M, int N, int K)
+{
+    // Leading dimensions. Packed with no transpositions.
+    int lda = M;
+    int ldb = K;
+    int ldc = M;
+
+    // Tile using a 2D grid
+    int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
+    int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
+
+
+    wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, wmma::precision::tf32, wmma::row_major> a_frag;
+    wmma::fragment < wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, wmma::precision::tf32, wmma::col_major > b_frag;
+    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, float> acc_frag;
+
+    wmma::fill_fragment(acc_frag, 0.0f);
+
+    // Loop over the K-dimension
+    for (int i = 0; i < K; i += WMMA_K) {
+        int aRow = warpM * WMMA_M;
+        int aCol = i;
+        int bRow = i;
+        int bCol = warpN * WMMA_N;
+
+        // Bounds checking
+        if (aRow < M && aCol < K && bRow < K && bCol < N) {
+            // Load the inputs
+            wmma::load_matrix_sync(a_frag, a + aRow + aCol * lda, lda);
+            wmma::load_matrix_sync(b_frag, b + bRow + bCol * ldb, ldb);
+
+            // Perform the matrix multiplication
+            wmma::mma_sync(acc_frag, a_frag, b_frag, acc_frag);
+        }
+    }
+
+    int cRow = warpM * WMMA_M;
+    int cCol = warpN * WMMA_N;
+
+    if (cRow < M && cCol < N) {
+        wmma::store_matrix_sync(c + cRow + cCol * ldc, acc_frag, ldc, wmma::mem_row_major);
+    }
+}
+
 
 __device__ void batched_addBiases(const float* b, const float* inputMatrix, float* result, int M, int batchSize, int i, int j)
 {
@@ -837,7 +893,7 @@ int cu_utility::cuForwardBatch(
     int batchSize
 ) {
     int N = 784;
-    int implementation = 1; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
+    int implementation = 3; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
 
     float alpha = 1.0f;
     float beta = 0.0f;
@@ -905,7 +961,7 @@ int cu_utility::cuForwardBatch(
                 //cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH);
                 cublasSgemm(
                     handle,               // cuBLAS handle
-                    CUBLAS_OP_T,          // No transpose for W
+                    CUBLAS_OP_T,          // transpose for W
                     CUBLAS_OP_N,          // No transpose for A
                     M,                    // Number of rows of the result
                     batchSize,            // Number of columns of the result
@@ -933,6 +989,25 @@ int cu_utility::cuForwardBatch(
 				break;
             case 3:
                 // tensor cores
+				batched_forwardMatmulTensorCore << <gridDim, blockDim >> > (
+					d_weights[layer - 1],
+					input,
+					output,
+					layers[layer],
+					layers[layer - 1],
+					batchSize);
+			    batched_addBiases<<<gridDim, blockDim >>>(
+                    d_biases[layer - 1],
+                    output,
+                    output,
+                    layers[layer],
+                    batchSize);
+                batched_sigmoid<<<gridDim, blockDim >>>(
+                    output,
+                    output,
+                    layers[layer],
+                    batchSize);
+
 				break;
             default:
                 std::cout << "Invalid Implementation" << std::endl;

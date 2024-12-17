@@ -377,19 +377,38 @@ __global__ void global_forwardLayerBatch(const float* W, const float* b, const f
 }
 
 __global__ void countNumCorrectPredictions(const float* predictions, const int* labels, int* numCorrect, int numExamples, int numClasses) {
-    int i= blockIdx.x * blockDim.x + threadIdx.x;
+    // Shared memory for partial sums
+    __shared__ int blockSum[1024]; // Assuming blockDim.x <= 1024
+    int tid = threadIdx.x;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    blockSum[tid] = 0;
 
     if (i < numExamples) {
-		int maxIndex = 0;
-		float maxVal = predictions[i * numClasses];
-		for (int j = 1; j < numClasses; j++) {
-			float val = predictions[i * numClasses + j];
-			if (val > maxVal) {
-				maxVal = val;
-				maxIndex = j;
-			}
-		}
-		atomicAdd(numCorrect, (maxIndex == labels[i]));
+        int maxIndex = 0;
+        float maxVal = predictions[i * numClasses];
+        for (int j = 1; j < numClasses; j++) {
+            float val = predictions[i * numClasses + j];
+            if (val > maxVal) {
+                maxVal = val;
+                maxIndex = j;
+            }
+        }
+        blockSum[tid] = (maxIndex == labels[i]);
+    }
+    __syncthreads();
+
+    // Reduction within the block
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            blockSum[tid] += blockSum[tid + s];
+        }
+        __syncthreads();
+    }
+
+    // Add block's partial sum to global result
+    if (tid == 0) {
+        atomicAdd(numCorrect, blockSum[0]);
     }
 }
 

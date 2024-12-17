@@ -250,10 +250,10 @@ float NN::evaluate(const Matrix &testData, const std::vector<int> &testLabels) {
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed = end - start;
 
-  std::cout << "done." << std::endl;
-  std::cout << "Elapsed time: " << elapsed.count() << " seconds." << std::endl;
+  std::cout << "\tdone." << std::endl;
+  std::cout << "\tElapsed time: " << elapsed.count() << " seconds." << std::endl;
   float accuracy = (float)numCorrect / testData.size();
-  std::cout << "Accuracy: " << accuracy
+  std::cout << "\tAccuracy: " << accuracy
             << std::endl;
   return accuracy;
 }

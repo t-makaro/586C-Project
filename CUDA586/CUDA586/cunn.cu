@@ -531,12 +531,12 @@ float CUNN::evaluate(const Matrix& testData,
     return accuracy;
 }
 
-float CUNN::evaluate(const float *input, const int* labels, int numExamples)
+float CUNN::evaluate(const float *input, const int* labels, int numExamples, int implementation)
 {
     // timing
     auto start = std::chrono::high_resolution_clock::now();
     
-    int numCorrect = cu_utility::cuForwardBatch(d_weights, d_biases, d_activations_batch, layers, input, labels, numExamples, batchSize);
+    int numCorrect = cu_utility::cuForwardBatch(d_weights, d_biases, d_activations_batch, layers, input, labels, numExamples, batchSize, implementation);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;

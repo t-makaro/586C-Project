@@ -52,7 +52,8 @@ public:
 		const float *d_X, 
 		const int* d_Y,
 		int numExamples,
-		int batchSize
+		int batchSize,
+		int implementation
 	);
 	static float* copyDataToDevice(Matrix& X);
 	static int* copyDataToDevice(std::vector<int>& X);

@@ -909,10 +909,10 @@ int cu_utility::cuForwardBatch(
     const float* d_X,
 	const int* d_Y,
     int numExamples,
-    int batchSize
+    int batchSize,
+    int implementation // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
 ) {
     int N = 784;
-    int implementation = 3; // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
 
     float alpha = 1.0f;
     float beta = 0.0f;

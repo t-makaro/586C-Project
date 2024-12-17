@@ -17,7 +17,7 @@ public:
     void train(const float* d_trainingData, const int* d_trainingLabels, const int M, const int N,
         const int iterations, const int batchSize, const float learningRate);
     float evaluate(const Matrix& testData, const std::vector<int>& testLabels);
-    float evaluate(const float *input, const int* labels, int numExamples);
+    float evaluate(const float *input, const int* labels, int numExamples, int implementation);
 
     void copyWeights(const std::vector<Matrix> weights);
     void copyBiases(const std::vector<Vector> biases);

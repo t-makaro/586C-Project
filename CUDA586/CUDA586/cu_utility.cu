@@ -387,7 +387,7 @@ __global__ void countNumCorrectPredictions(const float* predictions, const int* 
     if (i < numExamples) {
         int maxIndex = 0;
         float maxVal = predictions[i * numClasses];
-        for (int j = 1; j < numClasses; j++) {
+        for (int j = 1; j < 10; j++) {
             float val = predictions[i * numClasses + j];
             if (val > maxVal) {
                 maxVal = val;
@@ -910,7 +910,11 @@ int cu_utility::cuForwardBatch(
 	const int* d_Y,
     int numExamples,
     int batchSize,
-    int implementation // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
+    int implementation, // 0 is default. 1 is default but separate global kernels, 2 is cublas, 3 is tensor cores.
+    const std::vector<float*> d_weightsPadded, const std::vector<float*> d_biasesPadded,
+    const std::vector<float*> d_activations_batchPadded, const std::vector<int> layersPadded,
+    const std::vector<__half*> d_weightsPaddedHalf, const std::vector<__half*> d_biasesPaddedHalf,
+    const std::vector<__half*> d_activations_batchPaddedHalf
 ) {
     int N = 784;
 
@@ -918,8 +922,10 @@ int cu_utility::cuForwardBatch(
     float beta = 0.0f;
 
     // alloc memory for predictions
+    int numClasses = (implementation >= 3) ? 16 : 10;
+
 	float* d_predictions;
-	cudaMalloc(&d_predictions, numExamples * 10 * sizeof(float));
+	cudaMalloc(&d_predictions, numExamples * numClasses * sizeof(float));
 
     // Create the cuBLAS handle
     cublasHandle_t handle;
@@ -938,7 +944,7 @@ int cu_utility::cuForwardBatch(
 			gridDim = dim3(batchSize, CEIL_DIV(layers[layer], blockDim.y), 1);
 
             const float* input = (layer == 1) ? d_x : d_activations_batch[layer - 1];
-            float* output = (layer == layers.size() - 1) ? d_predictions + i * 10 : d_activations_batch[layer];
+            float* output = (layer == layers.size() - 1) ? d_predictions + i * numClasses : d_activations_batch[layer];
             int M = layers[layer];
             int N2 = layers[layer-1];
 
@@ -975,9 +981,10 @@ int cu_utility::cuForwardBatch(
                     batchSize);
                 break;
 			case 2:
-				// cublas
+				//cublas
                 cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH); // use tensor cores
                 //cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH);
+
                 cublasSgemm(
                     handle,               // cuBLAS handle
                     CUBLAS_OP_T,          // transpose for W
@@ -1026,7 +1033,45 @@ int cu_utility::cuForwardBatch(
                     output,
                     layers[layer],
                     batchSize);
+				break;
+			case 4:
+				// Cublas with Padded FP32
+                cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH); // use tensor cores
+                input = (layer == 1) ? d_x : d_activations_batchPadded[layer - 1];
+                output = (layer == layers.size() - 1) ? d_predictions + i * numClasses : d_activations_batchPadded[layer];
 
+                M = layersPadded[layer];
+                N2 = layersPadded[layer - 1];
+
+                gridDim = dim3(batchSize, CEIL_DIV(layersPadded[layer], blockDim.y), 1);
+
+                cublasSgemm(
+                    handle,               // cuBLAS handle
+                    CUBLAS_OP_T,          // transpose for W
+                    CUBLAS_OP_N,          // No transpose for A
+                    M,                    // Number of rows of the result
+                    batchSize,            // Number of columns of the result
+                    N2,                    // Inner dimension of the multiplication
+                    &alpha,               // Scalar alpha
+                    d_weightsPadded[layer - 1],                  // Pointer to the first matrix W
+                    N2,                    // Leading dimension of W
+                    input,                  // Pointer to the first matrix A
+                    N2,                    // Leading dimension of A
+                    &beta,                // Scalar beta
+                    output,             // Pointer to the result matrices
+                    M                     // Leading dimension of result
+                );
+                batched_addBiases <<<gridDim, blockDim >>> (
+                    d_biasesPadded[layer - 1],
+                    output,
+                    output,
+                    layersPadded[layer],
+                    batchSize);
+                batched_sigmoid <<<gridDim, blockDim >>> (
+                    output,
+                    output,
+                    layersPadded[layer],
+                    batchSize);
 				break;
             default:
                 std::cout << "Invalid Implementation" << std::endl;
@@ -1041,7 +1086,7 @@ int cu_utility::cuForwardBatch(
 
 	int threadsPerBlock = 128;
 	int blocksPerGrid = CEIL_DIV(numExamples, threadsPerBlock);
-	countNumCorrectPredictions << <blocksPerGrid, threadsPerBlock >> > (d_predictions, d_Y, d_numCorrect, numExamples, 10);
+	countNumCorrectPredictions << <blocksPerGrid, threadsPerBlock >> > (d_predictions, d_Y, d_numCorrect, numExamples, numClasses);
 
 	int numCorrect;
 	cudaMemcpy(&numCorrect, d_numCorrect, sizeof(int), cudaMemcpyDeviceToHost);
@@ -1062,7 +1107,17 @@ int cu_utility::cuForwardBatch(
         cublasSscal(handle, ldm - p, &beta, &m[IDX2C(p, q, ldm)], 1);
     }
 
+__global__ void convertFP32toFP16(float* input, __half* output, int size) {
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx < size) {
+		output[idx] = __float2half(input[idx]);
+	}
+}
 
+void cu_utility::convertFP32Matrix2FP16(float* d_input, __half* d_output, int mrows, int ncols) {
+		int size = mrows * ncols;
+		convertFP32toFP16 <<<(size + 255) / 256, 256 >>> (d_input, d_output, size);
+}
 
 int cu_utility::testCuBlas() {
         cudaError_t cudaStat;

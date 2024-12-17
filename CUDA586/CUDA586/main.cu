@@ -126,12 +126,22 @@ int main() {
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_testData, d_testLabels, M_test, 2);
 
-    // NN 4: Tensor Core forward pass
-    std::cout << std::endl << "Testing Tensor Matmul Implementation" << std::endl;
+    // NN 3: Padded Test
+    std::cout << std::endl << "Testing Padded Forward Pass" << std::endl;
     std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
-    nn.evaluate(d_trainData, d_trainLabels, M_train, 3);
+    nn.evaluate(d_trainData, d_trainLabels, M_train, 4);
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
-    nn.evaluate(d_testData, d_testLabels, M_test, 3);
+    nn.evaluate(d_testData, d_testLabels, M_test, 4);
+
+    // NN 4: Tensor Core forward pass
+    nn.copyParametersToDevicePadded();
+    nn.setBatchSizeDevicePadded(forwardBatchSize);
+
+    //std::cout << std::endl << "Testing Tensor Matmul Implementation" << std::endl;
+    //std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
+    //nn.evaluate(d_trainData, d_trainLabels, M_train, 3);
+    //std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
+    //nn.evaluate(d_testData, d_testLabels, M_test, 3);
 #endif
 
     // Free the GPU memory

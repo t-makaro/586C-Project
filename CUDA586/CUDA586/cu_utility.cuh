@@ -53,7 +53,11 @@ public:
 		const int* d_Y,
 		int numExamples,
 		int batchSize,
-		int implementation
+		int implementation,
+		const std::vector<float*> d_weightsPadded, const std::vector<float*> d_biasesPadded,
+		const std::vector<float*> d_activations_batchPadded, const std::vector<int> layersPadded,
+		const std::vector<__half*> d_weightsPaddedHalf, const std::vector<__half*> d_biasesPaddedHalf,
+		const std::vector<__half*> d_activations_batchPaddedHalf
 	);
 	static float* copyDataToDevice(Matrix& X);
 	static int* copyDataToDevice(std::vector<int>& X);
@@ -62,6 +66,8 @@ public:
 	static void printVector(const std::vector<float>& v, const int& rowLength);
 	static void printVectorGPU(const float* d_v, int N, const int& rowLength);
 	static void printMatrixRowGPU(const float* d_v, int M, int N, int row, const int& rowLength);
+
+	static void convertFP32Matrix2FP16(float* d_input, __half* d_output, int mrows, int ncols);
 
 	static int testCuBlas();
 };

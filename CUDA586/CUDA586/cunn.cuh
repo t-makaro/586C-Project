@@ -26,13 +26,17 @@ public:
     static float d_sigmoid(float x);
 
     void copyParametersToDevice();
+    void copyParametersToDevicePadded();
     void testForwardZ(bool isGpu, Vector &testData);
     void testBackwardOutputLayer(bool isGPU, Vector& testData, int testLabel);
     void setBatchSizeDevice(int batchSize);
 
+    void setBatchSizeDevicePadded(int batchSize);
+
 protected:
     int numLayers;
     std::vector<int> layers;
+    std::vector<int> layersPadded;
     std::vector<Matrix> weights;
     std::vector<Vector> biases;
     // preallocate memory for forward pass
@@ -51,6 +55,15 @@ protected:
     std::vector<float *> d_activations;
     std::vector<float*> d_zs;
 
+	// padded device pointers
+	std::vector<float*> d_weightsPadded;
+	std::vector<float*> d_biasesPadded;
+	std::vector<float*> d_activations_batchPadded;
+
+    std::vector<__half*> d_weightsPaddedHalf;
+    std::vector<__half*> d_biasesPaddedHalf;
+    std::vector<__half*> d_activations_batchPaddedHalf;
+
 	int batchSize = 1;
 ;   std::vector<float *> d_weights_batch;
     std::vector<float *> d_biases_batch;
@@ -58,6 +71,8 @@ protected:
     
 ;
     void deviceAlloc();
+
+    void deviceAllocPadded();
 
 	void deviceFree();
 

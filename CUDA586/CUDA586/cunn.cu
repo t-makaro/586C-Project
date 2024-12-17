@@ -7,6 +7,11 @@ CUNN::CUNN(std::vector<int> layers) : layers(layers) {
     activations.reserve(numLayers);
     d_zs.reserve(numLayers);
 
+	layersPadded.reserve(numLayers);
+    for (int layer : layers) {
+		layersPadded.push_back(((layer + 15) / 16) * 16); // round up to the nearest multiple of 16
+    }
+
     /*d_weights.reserve(numLayers - 1);
     d_biases.reserve(numLayers - 1);
     d_activations.reserve(numLayers);
@@ -20,6 +25,14 @@ CUNN::CUNN(std::vector<int> layers) : layers(layers) {
     d_zs.resize(numLayers);
 
 	d_activations_batch.resize(numLayers);
+
+    d_weightsPadded.resize(numLayers - 1);
+    d_biasesPadded.resize(numLayers - 1);
+	d_activations_batchPadded.resize(numLayers);
+
+    d_weightsPaddedHalf.resize(numLayers - 1);
+    d_biasesPaddedHalf.resize(numLayers - 1);
+    d_activations_batchPaddedHalf.resize(numLayers);
 }
 
 CUNN::~CUNN() {
@@ -46,6 +59,24 @@ void CUNN::deviceAlloc() {
         cudaMalloc(&d_zs[i], sizeAi);
     }
 }
+void CUNN::deviceAllocPadded() {
+    size_t sizeA0 = layersPadded[0] * sizeof(float); // input vector
+
+    for (int i = 1; i < numLayers; i++) {
+        int M = layersPadded[i - 1];
+        int N = layersPadded[i];
+
+        size_t sizeWi = M * N;
+        size_t sizeAi = N;
+        size_t sizeBi = N;
+
+        cudaMalloc(&d_weightsPadded[i - 1], sizeWi*sizeof(float));
+        cudaMalloc(&d_biasesPadded[i - 1], sizeBi*sizeof(float));
+
+        cudaMalloc(&d_weightsPaddedHalf[i - 1], sizeWi * sizeof(__half));
+        cudaMalloc(&d_biasesPaddedHalf[i - 1], sizeBi * sizeof(__half));
+    }
+}
 
 void CUNN::deviceFree() {
     cudaFree(d_activations[0]);
@@ -55,6 +86,12 @@ void CUNN::deviceFree() {
         cudaFree(d_biases[i - 1]);
         cudaFree(d_activations[i]);
         cudaFree(d_zs[i]);
+
+		cudaFree(d_weightsPadded[i - 1]);
+		cudaFree(d_biasesPadded[i - 1]);
+
+		cudaFree(d_weightsPaddedHalf[i - 1]);
+		cudaFree(d_biasesPaddedHalf[i - 1]);
     }
 }
 
@@ -70,6 +107,27 @@ void CUNN::setBatchSizeDevice(int batchSize) {
         
         size_t sizeAi = N * sizeof(float) * batchSize;
 		cudaMalloc(&d_activations_batch[i], sizeAi);
+    }
+}
+
+void CUNN::setBatchSizeDevicePadded(int batchSize) {
+    this->batchSize = batchSize;
+
+    size_t sizeA0 = layersPadded[0] * batchSize * sizeof(float); // input batch 
+    cudaMalloc(&d_activations_batchPadded[0], sizeA0);
+
+    for (int i = 1; i < numLayers; i++) {
+        int M = layersPadded[i - 1];
+        int N = layersPadded[i];
+
+        size_t sizeAi = N * batchSize;
+        cudaMalloc(&d_activations_batchPadded[i], sizeAi * sizeof(float));
+		cudaMemset(d_activations_batchPadded[i], 0, sizeAi * sizeof(float));
+
+        cudaMalloc(&d_activations_batchPaddedHalf[i], sizeAi * sizeof(__half));
+		cudaMemset(d_activations_batchPaddedHalf[i], 0, sizeAi * sizeof(__half));
+
+		cu_utility::convertFP32Matrix2FP16(d_activations_batchPadded[i], d_activations_batchPaddedHalf[i], N, batchSize);
     }
 }
 
@@ -93,6 +151,35 @@ void CUNN::copyParametersToDevice() {
         size_t sizeBi = M * sizeof(float);
         cudaMemcpy(d_biases[i], biases[i].data(), sizeBi, cudaMemcpyHostToDevice);
     }
+}
+
+void CUNN::copyParametersToDevicePadded() {
+	deviceAllocPadded();
+	for (int i = 0; i < weights.size(); i++) {
+		int M = weights[i].size();
+		int N = weights[i][0].size();
+		assert(M == biases[i].size());
+
+		int MPad = layersPadded[i+1];
+		int NPad = layersPadded[i];
+		assert(MPad == ((weights[i].size()+15)/16)*16);
+		assert(NPad == ((weights[i][0].size()+15)/16)*16);
+
+        std::vector<float> Wi_flattened(MPad * NPad, 0.0f);
+		for (int j = 0; j < M; j++) {
+			std::copy(weights[i][j].begin(), weights[i][j].end(), Wi_flattened.begin() + j * NPad);
+		}
+
+        size_t sizeWi = MPad * NPad * sizeof(float);
+		cudaMemcpy(d_weightsPadded[i], Wi_flattened.data(), sizeWi, cudaMemcpyHostToDevice);
+		size_t sizeBi = M * sizeof(float);
+		cudaMemset(d_biasesPadded[i], 0, MPad * sizeof(float));
+		cudaMemcpy(d_biasesPadded[i], biases[i].data(), sizeBi, cudaMemcpyHostToDevice);
+
+		// Convert to half precision
+		cu_utility::convertFP32Matrix2FP16(d_weightsPadded[i], d_weightsPaddedHalf[i], MPad, NPad);
+		cu_utility::convertFP32Matrix2FP16(d_biasesPadded[i], d_biasesPaddedHalf[i], MPad, 1);
+	}
 }
 
 void CUNN::testForwardZ(bool isGpu, Vector &testData)
@@ -536,7 +623,9 @@ float CUNN::evaluate(const float *input, const int* labels, int numExamples, int
     // timing
     auto start = std::chrono::high_resolution_clock::now();
     
-    int numCorrect = cu_utility::cuForwardBatch(d_weights, d_biases, d_activations_batch, layers, input, labels, numExamples, batchSize, implementation);
+    int numCorrect = cu_utility::cuForwardBatch(d_weights, d_biases, d_activations_batch, layers, input, labels, numExamples, batchSize, implementation,
+        d_weightsPadded, d_biasesPadded, d_activations_batchPadded, layersPadded,
+        d_weightsPaddedHalf, d_biasesPaddedHalf, d_activations_batchPaddedHalf);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;

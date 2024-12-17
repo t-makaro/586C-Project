@@ -112,18 +112,26 @@ int main() {
 #if TEST_FORWARD
     nn.setBatchSizeDevice(forwardBatchSize);
 
-    // NN 2: Forward Pass Training Set
+    // NN 2: CUDA Core forward test
+    std::cout << std::endl << "Testing Original Shader Core Matmul Implementation" << std::endl;
     std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_trainData, d_trainLabels, M_train, 0);
-
-    // NN 3: Forward Pass Test Set
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_testData, d_testLabels, M_test, 0);
 
-    // NN 4: Forward Pass Training Set
-	std::cout << "Testing cuBLAS Matmul" << std::endl;
+    // NN 3: cuBLAS forward pass
+	std::cout << std::endl << "Testing cuBLAS Matmul Implementation" << std::endl;
     std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_trainData, d_trainLabels, M_train, 2);
+    std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
+    nn.evaluate(d_testData, d_testLabels, M_test, 2);
+
+    // NN 4: Tensor Core forward pass
+    std::cout << std::endl << "Testing Tensor Matmul Implementation" << std::endl;
+    std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
+    nn.evaluate(d_trainData, d_trainLabels, M_train, 3);
+    std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
+    nn.evaluate(d_testData, d_testLabels, M_test, 3);
 #endif
 
     // Free the GPU memory

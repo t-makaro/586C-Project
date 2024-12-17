@@ -127,6 +127,9 @@ int main() {
     nn.evaluate(d_testData, d_testLabels, M_test, 2);
 
     // NN 3: Padded Test
+    nn.copyParametersToDevicePadded();
+    nn.setBatchSizeDevicePadded(forwardBatchSize);
+
     std::cout << std::endl << "Testing Padded Forward Pass" << std::endl;
     std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_trainData, d_trainLabels, M_train, 4);
@@ -134,8 +137,6 @@ int main() {
     nn.evaluate(d_testData, d_testLabels, M_test, 4);
 
     // NN 4: Tensor Core forward pass
-    nn.copyParametersToDevicePadded();
-    nn.setBatchSizeDevicePadded(forwardBatchSize);
 
     //std::cout << std::endl << "Testing Tensor Matmul Implementation" << std::endl;
     //std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;

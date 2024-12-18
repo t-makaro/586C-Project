@@ -939,6 +939,9 @@ int cu_utility::cuForwardBatch(
     }
 
     dim3 blockDim(1, 32, 1);
+	dim3 gridDimTC;
+    dim3 blockDimTC;
+
     for (int i = 0; i < numExamples; i += batchSize) {
 		const float* d_x = d_X + i * N;
 		dim3 gridDim(batchSize, CEIL_DIV(300, blockDim.y), 1);
@@ -1070,15 +1073,24 @@ int cu_utility::cuForwardBatch(
 
                 output = (layer == layers.size() - 1) ? d_predictions + i * numClasses : d_activations_batchPadded[layer];
 
-                gridDim = dim3(batchSize, CEIL_DIV(layersPadded[layer], blockDim.y), 1);
+                blockDimTC.x = 128;
+                blockDimTC.y = 4;
 
-				global_forwardLayerBatchWMMA << <gridDim, blockDim >> > (
+                gridDimTC.x = (M + (WMMA_M * blockDimTC.x / 32 - 1)) /
+                    (WMMA_M * blockDimTC.x / 32);
+                gridDimTC.y = (batchSize + WMMA_N * blockDimTC.y - 1) / (WMMA_N * blockDimTC.y);
+
+
+				global_forwardLayerBatchWMMA << <gridDimTC, blockDimTC >> > (
 					d_weightsPaddedHalf[layer - 1],
 					inputHalf,
 					output,
 					layersPadded[layer],
-					layersPadded[layer - 1],
-					batchSize);
+					batchSize,
+					layersPadded[layer - 1]);
+
+				gridDim = dim3(batchSize, CEIL_DIV(layersPadded[layer], blockDim.y), 1);
+
                 batched_addBiases<<<gridDim, blockDim>>>(
                     d_biasesPadded[layer - 1],
                     output,

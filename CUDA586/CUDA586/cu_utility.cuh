@@ -67,7 +67,7 @@ public:
 	static void printVectorGPU(const float* d_v, int N, const int& rowLength);
 	static void printMatrixRowGPU(const float* d_v, int M, int N, int row, const int& rowLength);
 
-	static void convertFP32Matrix2FP16(float* d_input, __half* d_output, int mrows, int ncols);
+	static void convertFP32Matrix2FP16(const float* d_input, __half* d_output, int mrows, int ncols);
 
 	static int testCuBlas();
 };

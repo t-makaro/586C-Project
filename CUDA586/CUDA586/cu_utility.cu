@@ -944,6 +944,8 @@ int cu_utility::cuForwardBatch(
 			gridDim = dim3(batchSize, CEIL_DIV(layers[layer], blockDim.y), 1);
 
             const float* input = (layer == 1) ? d_x : d_activations_batch[layer - 1];
+            __half* inputHalf;
+
             float* output = (layer == layers.size() - 1) ? d_predictions + i * numClasses : d_activations_batch[layer];
             int M = layers[layer];
             int N2 = layers[layer-1];
@@ -1073,6 +1075,54 @@ int cu_utility::cuForwardBatch(
                     layersPadded[layer],
                     batchSize);
 				break;
+			case 5:
+                // Cublas with Padded FP16
+                cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH); // use tensor cores
+                input = (layer == 1) ? d_x : d_activations_batchPadded[layer - 1];
+                M = layersPadded[layer];
+                N2 = layersPadded[layer - 1];
+
+				convertFP32Matrix2FP16(input, d_activations_batchPaddedHalf[layer - 1], N2, batchSize);
+
+				inputHalf = d_activations_batchPaddedHalf[layer - 1];
+
+                output = (layer == layers.size() - 1) ? d_predictions + i * numClasses : d_activations_batchPadded[layer];
+
+                gridDim = dim3(batchSize, CEIL_DIV(layersPadded[layer], blockDim.y), 1);
+
+                cublasGemmEx(
+                    handle,               // cuBLAS handle
+                    CUBLAS_OP_T,          // transpose for W
+                    CUBLAS_OP_N,          // No transpose for A
+                    M,                    // Number of rows of the result
+                    batchSize,            // Number of columns of the result
+                    N2,                    // Inner dimension of the multiplication
+                    &alpha,               // Scalar alpha
+                    d_weightsPaddedHalf[layer - 1],                  // Pointer to the first matrix W
+                    CUDA_R_16F,
+                    N2,                    // Leading dimension of W
+                    inputHalf,                  // Pointer to the first matrix A
+                    CUDA_R_16F,
+                    N2,                    // Leading dimension of A
+                    &beta,                // Scalar beta
+                    output,             // Pointer to the result matrices
+                    CUDA_R_32F,
+                    M,                     // Leading dimension of result
+                    CUDA_R_32F,
+                    CUBLAS_GEMM_DEFAULT
+                );
+                batched_addBiases<<<gridDim, blockDim>>>(
+                    d_biasesPadded[layer - 1],
+                    output,
+                    output,
+                    layersPadded[layer],
+                    batchSize);
+                batched_sigmoid<<<gridDim, blockDim>>>(
+                    output,
+                    output,
+                    layersPadded[layer],
+                    batchSize);
+                break;
             default:
                 std::cout << "Invalid Implementation" << std::endl;
             }
@@ -1107,14 +1157,14 @@ int cu_utility::cuForwardBatch(
         cublasSscal(handle, ldm - p, &beta, &m[IDX2C(p, q, ldm)], 1);
     }
 
-__global__ void convertFP32toFP16(float* input, __half* output, int size) {
+__global__ void convertFP32toFP16(const float* input, __half* output, int size) {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < size) {
 		output[idx] = __float2half(input[idx]);
 	}
 }
 
-void cu_utility::convertFP32Matrix2FP16(float* d_input, __half* d_output, int mrows, int ncols) {
+void cu_utility::convertFP32Matrix2FP16(const float* d_input, __half* d_output, int mrows, int ncols) {
 		int size = mrows * ncols;
 		convertFP32toFP16 <<<(size + 255) / 256, 256 >>> (d_input, d_output, size);
 }

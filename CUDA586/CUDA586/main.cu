@@ -6,7 +6,7 @@
 #include "cunn.cuh"
 
 #define TEST_FORWARD true
-#define BACK_TEST false
+#define BACK_TEST true
 #define RUN_MAT_TEST false
 
 int main() {
@@ -105,7 +105,7 @@ int main() {
     std::cout << "Training..." << std::endl;
     nn2.train(d_trainData, d_trainLabels, M_train, N, 1, 10, 0.1f);
 
-    std::cout << "Evaluating on test set After training (Batched=" << forwardBatchSize << ")" << std::endl;
+    std::cout << "Evaluating on test set AFTER training (Batched=" << forwardBatchSize << ")" << std::endl;
     nn2.evaluate(d_testData, d_testLabels, M_test, 0);
 #endif
    

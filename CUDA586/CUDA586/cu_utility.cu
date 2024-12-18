@@ -286,6 +286,32 @@ __global__ void batched_forwardMatMul(const float* W, const float* A, float* res
 	}
 }
 
+__device__ void batched_addBiases(const float* b, const float* inputMatrix, float* result, int M, int batchSize, int i, int j)
+{
+	result[j * M + i] = inputMatrix[j * M + i] + b[i];
+}
+__global__ void batched_addBiases(const float* b, const float* inputMatrix, float* result, int M, int batchSize)
+{
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
+	if (i < M && j < batchSize) {
+		batched_addBiases(b, inputMatrix, result, M, batchSize, i, j);
+	}
+}
+
+__device__ void batched_sigmoid(const float* Z, float* result, int M, int batchSize, int i, int j)
+{
+	result[j * M + i] = sigmoid(Z[j * M + i]);
+}
+__global__ void batched_sigmoid(const float* Z, float* result, int M, int batchSize)
+{
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
+	int i = blockIdx.y * blockDim.y + threadIdx.y;
+	if (i < M && j < batchSize) {
+		batched_sigmoid(Z, result, M, batchSize, i, j);
+	}
+}
+
 __global__ void global_forwardLayerBatch(const float* W, const float* b, const float* A, float* result, int M, int N, int batchSize)
 {
     int j = blockIdx.x * blockDim.x + threadIdx.x;

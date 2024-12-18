@@ -136,6 +136,14 @@ int main() {
     std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
     nn.evaluate(d_testData, d_testLabels, M_test, 5);
 
+    std::cout << std::endl << "Testing Half Padded Forward Pass WMMA" << std::endl;
+    std::cout << "Evaluating on training set (Batched=" << forwardBatchSize << ")" << std::endl;
+    nn.evaluate(d_trainData, d_trainLabels, M_train, 6);
+    std::cout << "Evaluating on test set (Batched=" << forwardBatchSize << ")" << std::endl;
+    nn.evaluate(d_testData, d_testLabels, M_test, 6);
+
+
+
     // NN 4: Tensor Core forward pass
 
     //std::cout << std::endl << "Testing Tensor Matmul Implementation" << std::endl;

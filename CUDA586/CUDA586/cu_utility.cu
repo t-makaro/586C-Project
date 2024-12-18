@@ -376,6 +376,57 @@ __global__ void global_forwardLayerBatch(const float* W, const float* b, const f
     }
 }
 
+__global__ void global_forwardLayerBatchWMMA(__half* a, __half* b, float* c, int M, int N, int K) {
+    int lda = K;
+    int ldb = K;
+    int ldc = M;
+
+    int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
+    int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
+
+    wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, __half,
+        wmma::row_major>
+        a_frag;
+    wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, __half,
+        wmma::col_major>
+        b_frag;
+    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, float> acc_frag;
+    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, float> c_frag;
+
+    wmma::fill_fragment(acc_frag, 0.0f);
+
+    for (int i = 0; i < K; i += WMMA_K) {
+        int aRow = warpM * WMMA_M;
+        int aCol = i;
+
+        int bRow = i;
+        int bCol = warpN * WMMA_N;
+
+        if (aRow < M && aCol < K && bRow < K && bCol < N) {
+            wmma::load_matrix_sync(a_frag, a + aCol + aRow * lda, lda);
+            wmma::load_matrix_sync(b_frag, b + bRow + bCol * ldb, ldb);
+
+            wmma::mma_sync(acc_frag, a_frag, b_frag, acc_frag);
+        }
+    }
+
+    int cRow = warpM * WMMA_M;
+    int cCol = warpN * WMMA_N;
+
+    if (cRow < M && cCol < N) {
+        wmma::load_matrix_sync(c_frag, c + cRow + cCol * ldc, ldc,
+            wmma::mem_col_major);
+
+#pragma unroll
+        for (int i = 0; i < c_frag.num_elements; i++) {
+            c_frag.x[i] = acc_frag.x[i];
+        }
+
+        wmma::store_matrix_sync(c + cRow + cCol * ldc, c_frag, ldc,
+            wmma::mem_col_major);
+    }
+}
+
 __global__ void countNumCorrectPredictions(const float* predictions, const int* labels, int* numCorrect, int numExamples, int numClasses) {
     // Shared memory for partial sums
     __shared__ int blockSum[1024]; // Assuming blockDim.x <= 1024
@@ -1075,6 +1126,39 @@ int cu_utility::cuForwardBatch(
                     layersPadded[layer],
                     batchSize);
 				break;
+			case 6:
+                input = (layer == 1) ? d_x : d_activations_batchPadded[layer - 1];
+                M = layersPadded[layer];
+                N2 = layersPadded[layer - 1];
+
+				convertFP32Matrix2FP16(input, d_activations_batchPaddedHalf[layer - 1], N2, batchSize);
+
+				inputHalf = d_activations_batchPaddedHalf[layer - 1];
+
+                output = (layer == layers.size() - 1) ? d_predictions + i * numClasses : d_activations_batchPadded[layer];
+
+                gridDim = dim3(batchSize, CEIL_DIV(layersPadded[layer], blockDim.y), 1);
+
+				global_forwardLayerBatchWMMA << <gridDim, blockDim >> > (
+					d_weightsPaddedHalf[layer - 1],
+					inputHalf,
+					output,
+					layersPadded[layer],
+					layersPadded[layer - 1],
+					batchSize);
+                batched_addBiases<<<gridDim, blockDim>>>(
+                    d_biasesPadded[layer - 1],
+                    output,
+                    output,
+                    layersPadded[layer],
+                    batchSize);
+                batched_sigmoid<<<gridDim, blockDim>>>(
+                    output,
+                    output,
+                    layersPadded[layer],
+                    batchSize);
+                break;
+
 			case 5:
                 // Cublas with Padded FP16
 				cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH); // use tensor cores

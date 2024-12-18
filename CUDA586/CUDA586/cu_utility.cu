@@ -1019,26 +1019,7 @@ int cu_utility::cuForwardBatch(
                     batchSize);
 				break;
             case 3:
-                // tensor cores
-				batched_forwardMatmulTensorCore << <gridDim, blockDim >> > (
-					d_weights[layer - 1],
-					input,
-					output,
-					layers[layer],
-					layers[layer - 1],
-					batchSize);
-			    batched_addBiases<<<gridDim, blockDim >>>(
-                    d_biases[layer - 1],
-                    output,
-                    output,
-                    layers[layer],
-                    batchSize);
-                batched_sigmoid<<<gridDim, blockDim >>>(
-                    output,
-                    output,
-                    layers[layer],
-                    batchSize);
-				break;
+                break;
 			case 4:
 				// Cublas with Padded FP32
                 cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH); // use tensor cores

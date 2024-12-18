@@ -1077,7 +1077,7 @@ int cu_utility::cuForwardBatch(
 				break;
 			case 5:
                 // Cublas with Padded FP16
-                cublasSetMathMode(handle, CUBLAS_DEFAULT_MATH); // use tensor cores
+				cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH); // use tensor cores
                 input = (layer == 1) ? d_x : d_activations_batchPadded[layer - 1];
                 M = layersPadded[layer];
                 N2 = layersPadded[layer - 1];
@@ -1109,7 +1109,7 @@ int cu_utility::cuForwardBatch(
                     CUDA_R_32F,
                     M,                     // Leading dimension of result
                     CUDA_R_32F,
-                    CUBLAS_GEMM_DEFAULT
+                   CUBLAS_GEMM_DEFAULT_TENSOR_OP 
                 );
                 batched_addBiases<<<gridDim, blockDim>>>(
                     d_biasesPadded[layer - 1],

@@ -114,7 +114,9 @@ void CUNN::setBatchSizeDevicePadded(int batchSize) {
     this->batchSize = batchSize;
 
     size_t sizeA0 = layersPadded[0] * batchSize * sizeof(float); // input batch 
+	size_t sizeA0Half = layersPadded[0] * batchSize * sizeof(__half); // input batch
     cudaMalloc(&d_activations_batchPadded[0], sizeA0);
+	cudaMalloc(&d_activations_batchPaddedHalf[0], sizeA0Half);
 
     for (int i = 1; i < numLayers; i++) {
         int M = layersPadded[i - 1];

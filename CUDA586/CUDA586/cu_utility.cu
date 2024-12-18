@@ -286,84 +286,6 @@ __global__ void batched_forwardMatMul(const float* W, const float* A, float* res
 	}
 }
 
-// TODO 
-// src: https://developer.nvidia.com/blog/programming-tensor-cores-cuda-9/ 
-
-const int WMMA_M = 16;
-const int WMMA_N = 16;
-const int WMMA_K = 8;
-
-__global__ void batched_forwardMatmulTensorCore(const float* a, const float* b, float* c, int M, int N, int K)
-{
-    // Leading dimensions. Packed with no transpositions.
-    int lda = M;
-    int ldb = K;
-    int ldc = M;
-
-    // Tile using a 2D grid
-    int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
-    int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
-
-
-    wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, wmma::precision::tf32, wmma::row_major> a_frag;
-    wmma::fragment < wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, wmma::precision::tf32, wmma::col_major > b_frag;
-    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, float> acc_frag;
-
-    wmma::fill_fragment(acc_frag, 0.0f);
-
-    // Loop over the K-dimension
-    for (int i = 0; i < K; i += WMMA_K) {
-        int aRow = warpM * WMMA_M;
-        int aCol = i;
-        int bRow = i;
-        int bCol = warpN * WMMA_N;
-
-        // Bounds checking
-        if (aRow < M && aCol < K && bRow < K && bCol < N) {
-            // Load the inputs
-            wmma::load_matrix_sync(a_frag, a + aRow + aCol * lda, lda);
-            wmma::load_matrix_sync(b_frag, b + bRow + bCol * ldb, ldb);
-
-            // Perform the matrix multiplication
-            wmma::mma_sync(acc_frag, a_frag, b_frag, acc_frag);
-        }
-    }
-
-    int cRow = warpM * WMMA_M;
-    int cCol = warpN * WMMA_N;
-
-    if (cRow < M && cCol < N) {
-        wmma::store_matrix_sync(c + cRow + cCol * ldc, acc_frag, ldc, wmma::mem_row_major);
-    }
-}
-
-
-__device__ void batched_addBiases(const float* b, const float* inputMatrix, float* result, int M, int batchSize, int i, int j)
-{
-	result[j * M + i] = inputMatrix[j * M + i] + b[i];
-}
-__global__ void batched_addBiases(const float* b, const float* inputMatrix, float* result, int M, int batchSize)
-{
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
-	int i = blockIdx.y * blockDim.y + threadIdx.y;
-	if (i < M && j < batchSize) {
-		batched_addBiases(b, inputMatrix, result, M, batchSize, i, j);
-	}
-}
-
-__device__ void batched_sigmoid(const float* Z, float* result, int M, int batchSize, int i, int j)
-{
-	result[j * M + i] = sigmoid(Z[j * M + i]);
-}
-__global__ void batched_sigmoid(const float* Z, float* result, int M, int batchSize)
-{
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
-	int i = blockIdx.y * blockDim.y + threadIdx.y;
-	if (i < M && j < batchSize) {
-		batched_sigmoid(Z, result, M, batchSize, i, j);
-	}
-}
-
 __global__ void global_forwardLayerBatch(const float* W, const float* b, const float* A, float* result, int M, int N, int batchSize)
 {
     int j = blockIdx.x * blockDim.x + threadIdx.x;
@@ -375,6 +297,10 @@ __global__ void global_forwardLayerBatch(const float* W, const float* b, const f
         batched_sigmoid(result, result, M, batchSize, i, j);
     }
 }
+
+const int WMMA_M = 16;
+const int WMMA_N = 16;
+const int WMMA_K = 16;
 
 __global__ void global_forwardLayerBatchWMMA(__half* a, __half* b, float* c, int M, int N, int K) {
     int lda = K;
